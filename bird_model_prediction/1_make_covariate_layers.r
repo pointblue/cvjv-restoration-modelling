@@ -12,7 +12,7 @@ library(raster)
 messageTS <- function(...) message("[", Sys.time(), "] - ", ...)
 
 # Set directories
-baseDir <- "blah"
+baseDir <- "blah blah"
 tmaxDir <- file.path(baseDir, "tmax")
 lcDir <- file.path(baseDir, "DividedTNCcover")
 fcDir <- file.path(baseDir, "ForecastingTNC")
