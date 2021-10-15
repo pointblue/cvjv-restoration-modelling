@@ -1,6 +1,6 @@
 # Script to download and parse runoff data
 
-# Load necessary functions
+# Load necessary functions and directories
 # Must either run 00_definitions.R before this file or source it, replacing getwd() with your base working directory below
 code_file <- file.path(getwd(), "code/00_definitions.R")
 if (!file.exists(code_file)) {
