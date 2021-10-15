@@ -14,8 +14,6 @@ library(rvest)
 library(dplyr)
 library(readr)
 
-# Runoff =======================================
-
 # Download runoff data from CDEC, saving as a text file
 # Historical
 wsihist <- read_html("https://cdec.water.ca.gov/reportapp/javareports?name=WSIHIST")
@@ -33,7 +31,7 @@ wsi <- html_element(wsi, "pre") %>%
 wsi_file <- file.path(run_dir, paste0("wsi_", format(Sys.Date(), format = "%Y"), ".txt"))
 write(wsi, wsi_file)
 
-# Parse historical runoff data -----------------
+# Parse historical runoff data -----------------------
 
 # Read each line as a new element in a vector
 wsihist_data <- readLines(wsihist_file)
@@ -58,7 +56,7 @@ runoff_history$Type <- c(sapply(hist_split, `[[`, 6), sapply(hist_split, `[[`, 1
 write_csv(runoff_history, file.path(run_dir, "runoff_historical.csv"))
 
 
-# Parse forecasted runoff data ---------------
+# Parse forecasted runoff data ---------------------
 
 # Combine all forecast data into a single table
 # Differs from historical data in that these are forecasted values from May of a given year
@@ -104,8 +102,12 @@ for (ff in forecast_files) {
 wyt_defs <- read_csv(file.path(run_dir, "water_year_type_definitions.csv"))
 
 # Match drought type code
-runoff_forecast$Type <- mapply(val = runoff_forecast$Valley, idx = runoff_forecast$Index, FUN = function(val, idx) {
-  wyt_defs$Type[wyt_defs$Valley == as.character(val) & wyt_defs$IndexMin <= idx & wyt_defs$IndexMax > idx]})
+runoff_forecast$Type <- mapply(val = runoff_forecast$Valley, 
+                               idx = runoff_forecast$Index, 
+                               FUN = function(val, idx) {
+                                 wyt_defs$Type[wyt_defs$Valley == as.character(val) & 
+                                                 wyt_defs$IndexMin <= idx & wyt_defs$IndexMax > idx]
+                               })
 
 # Export
 write_csv(runoff_forecast, file.path(run_dir, "runoff_forecasted.csv"))
