@@ -4,7 +4,7 @@
 # Must either run 00_definitions.R before this file or source it, replacing getwd() with your base working directory below
 code_file <- file.path(getwd(), "code/00_definitions.R")
 if (!file.exists(code_file)) {
-  stop("Code file with required definitions not found is specified location. Please update path code_file.")
+  stop("Code file with required definitions not found in specified location. Please update path code_file.")
 } else {
   source(code_file)  
 }
@@ -54,7 +54,6 @@ runoff_history$Type <- c(sapply(hist_split, `[[`, 6), sapply(hist_split, `[[`, 1
 
 # Export
 write_csv(runoff_history, file.path(run_dir, "runoff_historical.csv"))
-
 
 # Parse forecasted runoff data ---------------------
 
