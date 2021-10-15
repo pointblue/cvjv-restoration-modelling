@@ -14,9 +14,6 @@ if (!file.exists(code_file)) {
 library(rgdal)
 library(raster)
 
-# Parameters
-overwrite <- FALSE
-
 # Define wanted landcovers
 landcovers <- c("Rice", "Corn", "Grain", "NonRiceCrops", "TreatedWetland", "Wetland_SemiSeas", "AltCrop", "AllCrops")
 lc_files <- file.path(lc_dir, paste0(landcovers, "_p44r33.tif"))
