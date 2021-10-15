@@ -14,8 +14,6 @@ if (!file.exists(code_file)) {
 library(rgdal)
 library(raster)
 
-wxl_dir <- file.path(prj_dir, "water_x_landcover")
-
 # Parameters
 overwrite <- FALSE
 
@@ -72,8 +70,9 @@ overlay_water_landcover <- function(water_files, landcover_files, output_dir = N
   
 }
 
-# Overlay all 2021 water files with all landcovers
-wtr_files <- water_df$File[water_df$Year == 2021]
+# Overlay water files with landcovers, specifying subsets of water and landcover files as desired
+# This exmaple selects all water layers from Feb - Apr 2021 and overlays them with all landcover files
+wtr_files <- water_df$File[water_df$Year == 2021 & water_df$Month %in% c("Feb", "Mar", "Apr")]
 wxl_stk <- overlay_water_landcover(water_files = wtr_files, 
                                    landcover_files = lc_files, 
                                    output_dir = wxl_dir, 
