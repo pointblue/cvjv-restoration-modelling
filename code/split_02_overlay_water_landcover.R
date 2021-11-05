@@ -15,12 +15,14 @@ if (!file.exists(code_file)) {
 library(rgdal)
 library(raster)
 
+
 # Load field file
 fld_fn <- "test_2021-11"
 field_shp <- readOGR(fld_dir, fld_fn)
 
 # Set bid and field being worked on
 # Eventually pass via command line
+auction <- "test_2021-11"
 bid <- "DEL-T1"
 field <- "1"
 
