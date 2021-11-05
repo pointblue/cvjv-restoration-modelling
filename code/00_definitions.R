@@ -3,9 +3,10 @@
 #  
 # Point Blue, California Rice Commission
 
-# Define a basic loggings function to add a timestamp to messages
+# Define a basic logging function to add a timestamp to messages
 # Wrapper for base 'message' function
-message_ts <- function(...) message("[", Sys.time(), "] - ", ...)
+add_ts <- function(...) paste0("[", Sys.time(), "] - ", ...)
+message_ts <- function(...) message(add_ts(...))
 
 # Set directories ---------------------------------------------
 
@@ -19,8 +20,12 @@ wtr_dir <- file.path(data_dir, "water")
 avg_dir <- file.path(data_dir, "water_averages")
 cov_dir <- file.path(data_dir, "other_covariates")
 
-wfc_dir <- file.path(data_dir, "water_forecast")
-wxl_dir <- file.path(data_dir, "water_x_landcover")
+axn_dir <- file.path(data_dir, "auction")
+fld_dir <- file.path(axn_dir, "fields")
+
+wfc_dir <- file.path(axn_dir, "water_forecast")
+wxl_dir <- file.path(axn_dir, "water_x_landcover")
+fcl_dir <- file.path(axn_dir, "water_focal")
 
 # Check that specified directories exist, optionally creating if missing
 check_dir <- function(directory, create = FALSE, verbose = FALSE) {
@@ -52,7 +57,8 @@ check_dir <- function(directory, create = FALSE, verbose = FALSE) {
 }
 check_dir(base_dir)
 if(file.exists(base_dir)) {
-  check_dir(c(code_dir, data_dir, lc_dir, run_dir, pcp_dir, wtr_dir, avg_dir, cov_dir, wfc_dir, wxl_dir), create = TRUE)
+  check_dir(c(code_dir, data_dir, lc_dir, run_dir, pcp_dir, wtr_dir, avg_dir, cov_dir, axn_dir, 
+              fld_dir, wfc_dir, wxl_dir, fcl_dir), create = TRUE)
 }
 
 # Check that code_dir actually contains the necessary code
