@@ -17,8 +17,9 @@ cov_dir <- file.path(data_dir, "other_covariates")
 mdl_dir <- file.path(data_dir, "models")
 brd_mdl_dir <- file.path(mdl_dir, "birds")
 
-axn_dir <- file.path(data_dir, "example")
+axn_dir <- file.path(data_dir, "auction")
 fld_dir <- file.path(axn_dir, "fields")
+split_dir <- file.path(fld_dir, "splits")
 
 # Average flooding (auction-level)
 scn_avg_dir <- file.path(axn_dir, "scenario_average_water")
