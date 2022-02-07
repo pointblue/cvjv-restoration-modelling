@@ -4,7 +4,7 @@
 # Shapefile must have a column containing the names you wish to group and split the analysis
 # Use of buffer_dist is recommended to speed processing; set as 2x your largest moving window
 # Returns a vector of created files
-split_flooding_area <- function(field_shapefile, field_column_name, guide_raster, output_dir, rasterize = TRUE, buffer_dist = NULL, overwrite = FALSE) {
+split_flooding_area <- function(field_shapefile, field_column_name, guide_raster, output_dir, rasterize_file = TRUE, buffer_dist = NULL, overwrite = FALSE) {
   
   # Load required packages
   if (!require(sp)) stop(add_ts("Library sp is required"))
@@ -12,7 +12,7 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
   if (!require(raster)) stop(add_ts("Library raster is required"))
   
   # Check simple parameters
-  if (!is.logical(rasterize)) stop(add_ts("Argument 'rasterize' must be TRUE or FALSE"))
+  if (!is.logical(rasterize_file)) stop(add_ts("Argument 'rasterize_file' must be TRUE or FALSE"))
   if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
   if (!is.null(buffer_dist)) {
     if (!is.numeric(buffer_dist)) stop(add_ts("Argument 'buffer_dist' must either be NULL for no buffering or a number specifying the buffer distance"))
@@ -110,7 +110,7 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
 		}
 		
 		# Rasterize if requirested -----------
-		if (rasterize == TRUE) {
+		if (rasterize_file == TRUE) {
 		  
 		  # Check file existence
 		  fa_rst_file <- file.path(output_dir, paste0(clean_name, ".tif"))
@@ -124,7 +124,7 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
 		    
 		    # Rasterize
 		    message_ts("Rasterizing...")
-		    fa_rst <- rasterize(fa_shp, guide_rst, field = 1, filename = fa_file, overwrite = TRUE)
+		    fa_rst <- rasterize(fa_shp, guide_rst, field = 1, filename = fa_rst_file, overwrite = TRUE)
 		    
 		  # Rasterize and buffer if requested
 		  } else {

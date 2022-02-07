@@ -33,7 +33,7 @@ floodarea_files <- split_flooding_area(floodarea_shapefile,
                                        split_column, 
                                        guide_raster = ref_file, 
                                        output_dir = fld_dir,            #defined in definitions.R
-                                       rasterize = TRUE,                #required for next step
+                                       rasterize_file = TRUE,           #required for next step
                                        buffer_dist = 10000)             #required for later masking that dramatically speeds processing 
 
 #floodarea_files <- list.files(fld_dir, pattern = ".shp$", full.names = TRUE)[1:6]
