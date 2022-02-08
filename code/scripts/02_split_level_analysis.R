@@ -92,7 +92,7 @@ fcl_files <- mean_neighborhood_water(wxl_files,                #previously-creat
 # If splitting, ensure all files from one flooding area and month are included
 
 # water_files_longterm are created by the auction-level analysis
-fcl_files_longterm <- list.files(avg_fcl_dir, pattern = "imposed.*tif$", full.names = TRUE) ##############CHANGE###############
+fcl_files_longterm <- list.files(avg_fcl_dir, pattern = "average.*tif$", full.names = TRUE)
 
 # Can subset files using the scenarios parameter, which is applied as a regex filter
 scenarios_filter <- "water_forecast_imposed"
