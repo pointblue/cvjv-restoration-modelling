@@ -22,7 +22,7 @@ impose_flooding <- function(water_files, field_files, output_dir, imposed_value 
   # Check other parameters
   if (!is.logical(mask)) stop(add_ts("Argument 'mask' must be TRUE or FALSE"))
   if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
-  if (!is.numeric(imposed_value)) stop(add_ts("Argument 'imposed_value' must be numeric"))
+  if (!is.numeric(imposed_value) & !is.null(imposed_value)) stop(add_ts("Argument 'imposed_value' must be numeric or null"))
 
   # Initialize output
 	processed_files <- c()
@@ -69,11 +69,21 @@ impose_flooding <- function(water_files, field_files, output_dir, imposed_value 
 			# Find extent of field
 			is_field <- !is.na(values(fld_rst)) & values(fld_rst) == 1
 			
-			# Impose flooding
-			message_ts("Imposing constant flood value...")
+			# Copy values
 			imp_rst <- wtr_msk_rst
-			values(imp_rst)[is_field] <- imposed_value
 			
+			# Impose flooding
+			if (is.null(imposed_value)) {
+			  
+			  message_ts("Using existing flood value value...")
+			  
+			} else {
+			  
+			  message_ts("Imposing constant flood value...")
+			  values(imp_rst)[is_field] <- imposed_value
+			  
+			}
+
 			message_ts("Output file: ", out_file)
 			writeRaster(imp_rst, filename = out_file, overwrite = TRUE)
 			message_ts("Complete.")
