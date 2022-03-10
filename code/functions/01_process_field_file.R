@@ -54,8 +54,8 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
     
   } else if (is.character(guide_raster)) {
     
-    if (length(guide_raster) != 1) stop(add_ts("field_shapefile must be a single shapefile or filename"))
-    if (!file.exists(guide_raster)) stop(add_ts("field_shapefile does not exist: ", field_shapefile, " not found."))
+    if (length(guide_raster) != 1) stop(add_ts("guide_raster be a single shapefile or filename"))
+    if (!file.exists(guide_raster)) stop(add_ts("guide_raster does not exist: ", field_shapefile, " not found."))
     
     guide_rst <- raster(guide_raster)
     
