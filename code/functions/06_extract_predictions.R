@@ -28,7 +28,7 @@ extract_predictions <- function(prediction_files, floodarea_shapefiles, field_co
 	for (fas in floodarea_shapefiles) {
 
 		message_ts("Working on shapefile ", fas)
-	  fa <- substr(basename(fas), 0, nchar(basename(fas)) - 4)
+		fa <- substr(basename(fas), 0, nchar(basename(fas)) - 4)
 		
 		# Check if flooding area shapefile exists and load
 		fa_shp <- readOGR(dirname(fas), fa)
@@ -77,6 +77,7 @@ extract_predictions <- function(prediction_files, floodarea_shapefiles, field_co
 			} 
       
 			# Build data frame for extracted values
+			message_ts("Building data frame...")
 			fn_split <- strsplit(basename(prd_files), "_")
 			prd_df <- data.frame("PredictionFilename" = basename(prd_files),
 			                     "FloodingArea" = extract_subelement(fn_split, 1),
@@ -84,9 +85,9 @@ extract_predictions <- function(prediction_files, floodarea_shapefiles, field_co
           								 "FieldAreaAcres" = rep(sum(fld_shp[[area_column]])), #need to check data type of area_column
           								 #"PredictionYear" = extract_subelement(fn_split, 2), #need to add
           								 "PredictionMonth" = extract_subelement(fn_split, 2),
-          								 "Species" = extract_subelement(fn_split, 6),
-          								 "Model" = substr(extract_subelement(fn_split, 8), 0, nchar(extract_subelement(fn_split, 8)) - 4),
-          								 "ModelLocation" = extract_subelement(fn_split, 7),
+          								 "Species" = extract_subelement(fn_split, 4),
+          								 "Model" = substr(extract_subelement(fn_split, 6), 0, nchar(extract_subelement(fn_split, 6)) - 4),
+          								 "ModelLocation" = extract_subelement(fn_split, 5),
           								 "PredictionMean" = rep(NA),
           								 "PredictionSum" = rep(NA),
           								 "PredictionMean_Landscape" = rep(NA))
