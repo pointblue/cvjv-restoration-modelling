@@ -50,7 +50,13 @@ clean_string <- function(x, sub_char = "-", ...) {
 # Function to make a string filename safe
 clean_string_remove_underscores <- function(x, sub_char = "-", ...) {
   gsub("[^a-zA-Z0-9\\-]", sub_char, x, ...)
+  
+  # Condense multiple sub_chars
+  gsub(paste0(sub_char, "+"), sub_char, x, ...)
 }
+
+# Function to split a vector into n chunks of equal size
+chunk <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE)) 
 
 # Function to more quickly trim rasters
 # raster::trim is ridiculously slow
