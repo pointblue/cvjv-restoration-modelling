@@ -19,19 +19,18 @@ check_dir <- function(directory, create = FALSE, verbose = FALSE) {
       
       if (create == FALSE) {
         
-        message_ts()
-        stop(paste("Directory", d, "is required but does not exist."))
+        stop(add_ts("Directory", d, "is required but does not exist."))
         
       } else {
         
-        message("Creating directory ", d)
+        message_ts("Creating directory ", d)
         dir.create(d)
         
       }
       
     } else if (verbose == TRUE) {
       
-      message("Directory", d, "exists.")
+      message_ts("Directory", d, "exists.")
       
     } 
     
