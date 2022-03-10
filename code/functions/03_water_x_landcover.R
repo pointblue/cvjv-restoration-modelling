@@ -34,6 +34,9 @@ overlay_water_landcover <- function(water_files, landcover_files, output_dir = N
 		out_files <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_x_", basename(landcover_files)))
 		if (all(file.exists(out_files)) & overwrite != TRUE) {
 			
+			# Append to output
+			processed_files <- c(processed_files, out_files)
+			
 			message_ts("All water x landcover overlays created for this file. Moving to next...")
 			next
 			

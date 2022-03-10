@@ -76,8 +76,8 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   landcover_rt_df$LandcoverDistance <- paste(landcover_rt_df$NameLandcover, landcover_rt_df$Distance, sep = "_")
   
   # Load static covariates
-  static_cov_stack <- stack(static_cov_files)
-  names(static_cov_stack) <- static_cov_names
+  static_cov_stk <- stack(static_cov_files)
+  names(static_cov_stk) <- static_cov_names
   
   # Initialize output
   processed_files <- c()
@@ -118,6 +118,9 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   		  prd_files <- file.path(output_dir, paste0(fac, "_", mth, "_", scn, "_", model_names, ".tif"))
   		  if (all(file.exists(prd_files))) {
   		    
+			# Append to output
+  			processed_files <- c(processed_files, prd_files)
+			
   		    message_ts("All bird predictions have been created for this scenario. Moving to next...")
   		    next
   		    
@@ -198,11 +201,16 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   			
   			# Load basic covariates
   			message_ts("Loading model covariates...")
-  			static_cov_stk <- stack(static_cov_files)
-  			names(static_cov_stk) <- static_cov_names
+  			#static_cov_stk <- stack(static_cov_files) #already loaded
+  			#names(static_cov_stk) <- static_cov_names
   			
   			# Load month file(s)
-  			mth_match <- which(monthly_cov_months == mth)
+			if (!(mth %in% monthly_cov_months)) stop(add_ts("Invalid month: no matching month files for month ", mth, ". Please update files in cov_dir and tmax files in definitions.R"))
+			mth_match <- which(monthly_cov_months == mth)
+			print(mth)
+			str(mth)
+			print(mth_match)
+			str(mth_match)
   			mth_cov_stk <- stack(monthly_cov_files[mth_match])
   			names(mth_cov_stk) <- monthly_cov_names[mth_match]
   			

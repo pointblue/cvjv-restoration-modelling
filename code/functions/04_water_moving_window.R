@@ -37,6 +37,9 @@ mean_neighborhood_water <- function(water_files, distances, output_dir, trim_ext
 		out_files <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_", distances, "m.tif"))
 		if (all(file.exists(out_files)) & overwrite != TRUE) {
 			
+			# Append to output
+			processed_files <- c(processed_files, out_files)
+			
 			message_ts("All moving windows calculated for this file. Moving to next...")
 			next
 			

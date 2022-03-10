@@ -46,6 +46,10 @@ impose_flooding <- function(water_files, field_files, output_dir, imposed_value 
 			out_fn_base <- paste(extract_subelement(strsplit(ffn, "\\."), 1), extract_subelement(strsplit(wfn, "\\."), 1), sep = "_")
 			out_file <- file.path(output_dir, paste0(out_fn_base, "_imposed.tif"))
 			if (file.exists(out_file) & overwrite != TRUE) {
+				
+				# Append to output
+				processed_files <- c(processed_files, out_file)
+				
 				message_ts("Flooding already imposed. Moving to next...")
 				next
 			} 
