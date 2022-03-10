@@ -33,15 +33,16 @@ summarize_predictions <- function(stat_files, metadata_csv_file, output_dir, ove
   md_df <- read.csv(metadata_csv_file, stringsAsFactors = FALSE)
   
   # Join to metadata
-  joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "Flooding.Area.ID")) #add as arguments
+  md_df$FieldNameFixed <- clean_string_remove_underscores(md_df$Fild_ID)
+  joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "Splt_ID", "FieldName" = "FieldNameFixed")) #add as arguments
   
   # Overlap
-  joined_df <- joined_df %>%
-    mutate(PredictionDateStart = as.Date(paste0("2021", "-", match(PredictionMonth, month.abb), "-1")), #need to fix year somehow
-           PredictionDateEnd = as.Date(paste0("2021", "-", match(PredictionMonth, month.abb), "-", ifelse(PredictionMonth == "Feb", "28", 
-                                                                              ifelse(PredictionMonth %in% c("Mar", "Jun", "Sep", "Nov"), "30", "31")))),
-           FloodDateStart = as.Date(Flooding.Start.Date, format = "%m/%d/%Y"),
-           FloodDateEnd = as.Date(Flooding.End.Date, format = "%m/%d/%Y")) %>%
+  overlap_df <- joined_df %>%
+    mutate(PredictionDateStart = as.Date(paste0("2022", "-", match(PredictionMonth, month.abb), "-1")), #need to fix year somehow
+           PredictionDateEnd = as.Date(paste0("2022", "-", match(PredictionMonth, month.abb), "-", ifelse(PredictionMonth == "Feb", "28", 
+                                                                              ifelse(PredictionMonth %in% c("Apr", "Jun", "Sep", "Nov"), "30", "31")))),
+           FloodDateStart = as.Date(strt_dt, format = "%m/%d/%Y"),
+           FloodDateEnd = FloodDateStart + wks_fld * 7) %>%
     mutate(OverlapMin = pmax(as.Date(FloodDateStart), PredictionDateStart), OverlapMax = pmin(as.Date(FloodDateEnd), PredictionDateEnd),
            DaysOverlap = pmax(0, difftime(OverlapMax, OverlapMin, unit = "days")))
   
@@ -50,15 +51,15 @@ summarize_predictions <- function(stat_files, metadata_csv_file, output_dir, ove
   if (file.exists(long_file) & overwrite != TRUE) {
     message_ts("File already exists and overwrite != TRUE. Moving to next...")  
   } else {
-    write.csv(joined_df, long_file, row.names = FALSE)
+    write.csv(overlap_df, long_file, row.names = FALSE)
     message_ts("Exported.")
     processed_files <- c(processed_files, long_file)
   }
   
   # Calculate ensembles
   message_ts("Calculating ensembles...")
-  ens_df <- joined_df %>%
-    rename(Bid = Bid.Name) %>%
+  ens_df <- overlap_df %>%
+    rename(Bid = Bid_ID) %>%
     group_by(Bid, FloodingArea, FieldName, FieldAreaAcres, PredictionMonth, FloodDateStart, FloodDateEnd, DaysOverlap, Species, Model) %>%
     mutate(EnsembleWeights = ifelse(ModelLocation == "S", 1, 2)) %>%
     summarize(SuitabilityMean = weighted.mean(PredictionMean, EnsembleWeights), 
@@ -95,6 +96,21 @@ summarize_predictions <- function(stat_files, metadata_csv_file, output_dir, ove
     processed_files <- c(processed_files, fa_file)
   }
   
+  # Drop months with no overlap
+  message_ts("Dropping months with no overlap...")
+  mth_df <- fa_df %>%
+    filter(DaysOverlap > 0)
+  
+  # Export
+  fa_mth_file <- file.path(output_dir, "03_prediction_summary_flooding_area_month.csv")
+  if (file.exists(fa_mth_file) & overwrite != TRUE) {
+    message_ts("File already exists and overwrite != TRUE. Moving to next...")  
+  } else {
+    write.csv(mth_df, fa_mth_file, row.names = FALSE)
+    message_ts("Exported.")
+    processed_files <- c(processed_files, fa_file)
+  }
+  
   # Combine by month
   fa_cmb_df <- fa_df %>%
     filter(DaysOverlap > 0) %>%
@@ -104,7 +120,7 @@ summarize_predictions <- function(stat_files, metadata_csv_file, output_dir, ove
               SuitSum = sum(SuitabilityMean * DaysOverlap * FloodingAreaAcres), LandscapeMean = weighted.mean(LandscapeMean, DaysOverlap))
   
   # Export
-  fa_cmb_file <- file.path(output_dir, "03_prediction_summary_flooding_area_across_months.csv")
+  fa_cmb_file <- file.path(output_dir, "04_prediction_summary_flooding_area_across_months.csv")
   if (file.exists(fa_cmb_file) & overwrite != TRUE) {
     message_ts("File already exists and overwrite != TRUE. Moving to next...")  
   } else {
@@ -121,7 +137,7 @@ summarize_predictions <- function(stat_files, metadata_csv_file, output_dir, ove
            SuitSum_Total = sum(c(SuitSum_AMAV, SuitSum_BNST, SuitSum_DOWI, SuitSum_DUNL)))
   
   # Export
-  fa_cmb_wide_file <- file.path(output_dir, "03_prediction_summary_flooding_area_totals_wide.csv")
+  fa_cmb_wide_file <- file.path(output_dir, "05_prediction_summary_flooding_area_totals_wide.csv")
   if (file.exists(fa_cmb_wide_file) & overwrite != TRUE) {
     message_ts("File already exists and overwrite != TRUE. Moving to next...")  
   } else {
