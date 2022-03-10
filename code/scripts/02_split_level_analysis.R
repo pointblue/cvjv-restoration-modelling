@@ -3,8 +3,10 @@
 # 
 
 # Load definitions and code
-def_file <- file.path(getwd(), "code/definitions.R")
-code_files <- file.path(getwd(), "code/functions/", c("00_shared_functions.R", 
+code_dir <- "V:/Project/wetland/NASA_water/CVJV_misc_pred_layer/ForecastingTNC/code/water_tracker/code"
+def_file <- file.path(code_dir, "definitions.R")
+code_files <- file.path(code_dir, "functions",
+													c("00_shared_functions.R", 
                                                       "01_process_field_file.R",
                                                       "02_impose_flooding.R",
                                                       "03_water_x_landcover.R", 
@@ -17,12 +19,12 @@ sapply(c(def_file, code_files), FUN = function(x) source(x))
 # Split field file ------------------------------------------
 # This section happens once and must complete before any subsequent steps run
 # Name of the shapefile
-floodarea_shapefile <- file.path(fld_dir, "test_fields.shp") #YOUR_SHAPEFILE_NAME.shp"
+floodarea_shapefile <- file.path(fld_dir, "Bid4Birds_Fields_Spring2022_metadata_utm10.shp") #YOUR_SHAPEFILE_NAME.shp"
 
 # Name of the column with names on which to group and split shapefile; should not contain special characters
 # This would be the column of field name for a field-level split analysis and the column of the bid for a bid-level one
 # If doing a combination, must create a new column as a composite key prior to running
-split_column <- "Name"
+split_column <- "Splt_ID"
 
 # Reference raster
 ref_file <- file.path(cov_dir, "data_type_constant_ebird_p44r33.tif")
@@ -44,8 +46,10 @@ floodarea_files <- split_flooding_area(floodarea_shapefile,
 # separately until all the bird predictions are done
 #
 # Specify the (monthly) forecasted (or long-term average) water files to process; usually 3-4 per auction
-water_files <- file.path(wfc_dir, c("L8_p44r33_2021_Aug_water_forecast.tif", 
-                                    "L8_p44r33_2021_Sep_water_forecast.tif"))
+water_files <- file.path(wfc_dir, c("L8_p44r33_2022_Feb_water_forecast.tif", 
+									"L8_p44r33_2022_Mar_water_forecast.tif", 
+									"L8_p44r33_2022_Apr_water_forecast.tif", 
+                                    "L8_p44r33_2022_May_water_forecast.tif"))
 
 # Specify field files; want tifs, not the shapefiles
 floodarea_raster_files <- gsub(".shp", ".tif", floodarea_files)
