@@ -57,8 +57,28 @@ extract_predictions <- function(prediction_files, floodarea_shapefiles, field_co
 			
 		}
 		
-		# Loop across fields
+		# If missing values in the field column, assign unique
+	  if (any(is.na(fa_shp@data[[field_column]])))	{
+	    
+	    field_is_na <- is.na(fa_shp@data[[field_column]])
+	    n_replacements <- sum(field_is_na)
+	    message_ts("Replacing ", n_replacements, " missing field names...")
+	    
+	    fa_shp@data[[field_column]][field_is_na] <- paste0("Unnamed-Field-", 1:n_replacements)
+	    
+	  }
+		
+		# Check field uniqueness, imposing if needed
 		fields <- unique(fa_shp@data[[field_column]])
+		if (length(fields) < nrow(fa_shp)) {
+		  
+		  message_ts("Field names are not unique. Appending numbers...")
+		  fa_shp@data[[field_column]] <- paste0(fa_shp@data[[field_column]], "-", 1:nrow(fa_shp))
+		  fields <- unique(fa_shp@data[[field_column]])
+		  
+		}
+		
+		# Loop across fields
 		for (fld in fields) {
 		
 			message_ts("Working on field ", fld)
