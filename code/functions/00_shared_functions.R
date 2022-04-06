@@ -43,15 +43,28 @@ extract_subelement <- function(x, element) sapply(x, `[[`, element)
 
 # Function to make a string filename safe
 clean_string <- function(x, sub_char = "-", ...) {
-  gsub("[^a-zA-Z0-9_\\-]", sub_char, x, ...)
+  y <- gsub("[^a-zA-Z0-9_\\-]", sub_char, x, ...)
+  
+  # Condense multiple sub_chars
+  y <- gsub(paste0(sub_char, "+"), sub_char, y, ...)
+  
+  # Drop terminal sub_char
+  y <- gsub(paste0(sub_car, "$"), "", y, ...)
+  
+  return(y)
 }
 
 # Function to make a string filename safe
 clean_string_remove_underscores <- function(x, sub_char = "-", ...) {
-  gsub("[^a-zA-Z0-9\\-]", sub_char, x, ...)
+  y <- gsub("[^a-zA-Z0-9\\-]", sub_char, x, ...)
   
   # Condense multiple sub_chars
-  gsub(paste0(sub_char, "+"), sub_char, x, ...)
+  y <- gsub(paste0(sub_char, "+"), sub_char, y, ...)
+  
+  # Drop terminal sub_char
+  y <- gsub(paste0(sub_car, "$"), "", y, ...)
+  
+  return(y)
 }
 
 # Function to split a vector into n chunks of equal size
