@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 *.RProj
+*.ovr
 data/example
 data/other_covariates/tmax*
 data/other_covariates/valley_roads*
