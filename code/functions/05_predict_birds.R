@@ -118,7 +118,7 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   		  prd_files <- file.path(output_dir, paste0(fac, "_", mth, "_", scn, "_", model_names, ".tif"))
   		  if (all(file.exists(prd_files))) {
   		    
-			# Append to output
+			  # Append to output
   			processed_files <- c(processed_files, prd_files)
 			
   		    message_ts("All bird predictions have been created for this scenario. Moving to next...")
@@ -134,7 +134,11 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
                           			       FUN = function(nm, dst) {
                             			         y <- water_files_longterm[grep(paste0(mth, ".*", nm, "_.*", dst), water_files_longterm)]
                             			         if(length(y) > 1) {
-                            			           stop(add_ts("Multiple matches found for long-term water files"))
+                            			           print(y)
+                            			           message_ts("Filtering by flood area...")
+                            			           y <- y[grepl(fa, y)]
+                            			           print(y)
+                            			           if(length(y) > 1) stop(add_ts("Multiple landcover matches found. Must specify."))
                             			         } else if (length(y) == 0) {
                             			           y <- 0
                             			         }
@@ -205,15 +209,15 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   			#names(static_cov_stk) <- static_cov_names
   			
   			# Load month file(s)
-			if (!(mth %in% monthly_cov_months)) stop(add_ts("Invalid month: no matching month files for month ", mth, ". Please update files in cov_dir and tmax files in definitions.R"))
-			mth_match <- which(monthly_cov_months == mth)
-			print(mth)
-			str(mth)
-			print(mth_match)
-			str(mth_match)
-  			mth_cov_stk <- stack(monthly_cov_files[mth_match])
+        if (!(mth %in% monthly_cov_months)) stop(add_ts("Invalid month: no matching month files for month ", mth, ". Please update files in cov_dir and tmax files in definitions.R"))
+  			mth_match <- which(monthly_cov_months == mth)
+  			#print(mth)
+  			#str(mth)
+  			#print(mth_match)
+  			#str(mth_match)
+    		mth_cov_stk <- stack(monthly_cov_files[mth_match])
   			names(mth_cov_stk) <- monthly_cov_names[mth_match]
-  			
+    		
   			# Crop stacks to field area
   			message_ts("Cropping covariate stacks to field...")
   			#print(extent(static_cov_stk))

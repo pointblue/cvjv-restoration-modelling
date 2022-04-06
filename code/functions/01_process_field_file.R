@@ -4,7 +4,8 @@
 # Shapefile must have a column containing the names you wish to group and split the analysis
 # Use of buffer_dist is recommended to speed processing; set as 2x your largest moving window
 # Returns a vector of created files
-split_flooding_area <- function(field_shapefile, field_column_name, guide_raster, output_dir, rasterize_file = TRUE, buffer_dist = NULL, overwrite = FALSE) {
+split_flooding_area <- function(field_shapefile, field_column_name, guide_raster, output_dir,
+                                flooding_areas = NULL, rasterize_file = TRUE, buffer_dist = NULL, overwrite = FALSE) {
   
   # Load required packages
   if (!require(sp)) stop(add_ts("Library sp is required"))
@@ -16,6 +17,9 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
   if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
   if (!is.null(buffer_dist)) {
     if (!is.numeric(buffer_dist)) stop(add_ts("Argument 'buffer_dist' must either be NULL for no buffering or a number specifying the buffer distance"))
+  }
+  if (!is.null(flooding_areas)) {
+    if (!is.character(flooding_areas)) stop(add_ts("Argument 'flooding_areas' must either be NULL or a character vector of flooding areas to process"))
   }
   
   # Check output dir
@@ -76,8 +80,10 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
   # Initialize output
   processed_files <- c()
   
-	# Get unique flooding areas
-	flooding_areas <- unique(field_shp@data[[field_column_name]])
+	# Get unique flooding areas if not specified
+  if (is.null(flooding_areas)) flooding_areas <- unique(field_shp@data[[field_column_name]])
+  
+  # Loop across flooding areas
 	for (fa in flooding_areas) {
 		
 	  # Make name safe for exporting
@@ -91,6 +97,9 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
 		if (file.exists(fa_file) & overwrite != TRUE) {
 		  
 		  message_ts("Split shapefile for flooding area ", fa, " already created and overwrite != TRUE. Moving to next...")
+		  
+		  # Append to return
+		  processed_files <- c(processed_files, fa_file)
 		  
 		} else {
 		  
