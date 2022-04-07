@@ -3,40 +3,45 @@
 # Point Blue, California Rice Commission
 
 # Set directories ---------------------------------------------
-base_dir <- "V:/Project/wetland/NASA_water/CVJV_misc_pred_layer/ForecastingTNC" #getwd() #replace as necessary with "YOUR/BASE/DIR"
-code_dir <- file.path(base_dir, "code/water_tracker/code")
-data_dir <- file.path(base_dir)
+base_dir <- "V:/Project/wetland/FWSPartners" #getwd() #replace as necessary with "YOUR/BASE/DIR"
+
+log_dir <- file.path(base_dir, "logs")
+
+data_dir <- file.path(base_dir, "code/cvjv-restoration-modelling/data")
+
 lc_dir <- file.path(data_dir, "landcover")
-run_dir <- file.path(data_dir, "runoff")
-pcp_dir <- file.path(data_dir, "precip")
-wtr_dir <- file.path(data_dir, "water")
 avg_dir <- file.path(data_dir, "water_averages")
-wfc_dir <- file.path(data_dir, "water_forecast")
 cov_dir <- file.path(data_dir, "other_covariates")
 
 mdl_dir <- file.path(data_dir, "models")
 brd_mdl_dir <- file.path(mdl_dir, "birds")
 
-# Auction-specific files
-axn_dir <- file.path(data_dir, "2022-03-wetlands")
-fld_dir <- file.path(axn_dir, "fields")
-split_dir <- file.path(fld_dir, "splits")
+wtr_dir <- file.path(data_dir, "water_average")
 
-# Average flooding (auction-level)
-scn_avg_dir <- file.path(axn_dir, "scenario_average_water")
-avg_wtr_dir <- file.path(scn_avg_dir, "water")
-avg_wxl_dir <- file.path(scn_avg_dir, "water_x_landcover")
-avg_fcl_dir <- file.path(scn_avg_dir, "water_focal")
-avg_prd_dir <- file.path(scn_avg_dir, "bird_predictions")
-avg_stat_dir <- file.path(scn_avg_dir, "stats")
+ref_file <- file.path(wtr_dir, "valley_average_Apr_2011-2021_snapped.tif")
 
-# Imposed flooding (field or bid-level)
-scn_imp_dir <- file.path(axn_dir, "scenario_imposed_water")
-imp_wtr_dir <- file.path(scn_imp_dir, "water_imposed")
-imp_wxl_dir <- file.path(scn_imp_dir, "water_x_landcover")
-imp_fcl_dir <- file.path(scn_imp_dir, "water_focal")
-imp_prd_dir <- file.path(scn_imp_dir, "bird_predictions")
-imp_stat_dir <- file.path(scn_imp_dir, "stats")
+# Analysis
+anl_dir <- file.path(base_dir, "analysis")
+
+grid_dir <- file.path(anl_dir, "grid")
+cell_dir <- file.path(grid_dir, "cells")
+
+wxl_dir <- file.path(anl_dir, "water_x_landcover")
+fcl_dir <- file.path(anl_dir, "water_focal")
+prd_dir <- file.path(anl_dir, "bird_predictions")
+stat_dir <- file.path(anl_dir, "stats")
+
+# Landcover files
+lc_defs <- list("Unsuitable" = 0, "GrassPasture" = 1, "Corn" = 3, 
+                "GrainPlus" = c(5, 7, 13), "Alfalfa" = 11, "Rice" = 12, 
+                "NonRiceCrop" = c(3, 5, 7, 13, 11, 99),
+                "WetlandNatural" = c(20, 30, 40), "WetlandTreated" = 50,
+                "AlternatingCrop" = 99)
+model_lcs <- c("Rice", "Corn", "GrainPlus", "AlternatingCrop", "NonRiceCrop", "WetlandNatural", "WetlandTreated")
+model_lc_files <- file.path(lc_dir, paste0(model_lcs, "_2014-2021.tif"))
+
+# Basins
+basins <- c("American", "Butte", "Colusa", "Delta", "San Joaquin", "Suisun", "Sutter", "Tulare", "Yolo")
 
 # Bird definitions
 bird_df <- data.frame("CommonName" = c("American Avocet", "Black-necked Stilt", "Dowitcher", "Dunlin", 
