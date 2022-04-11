@@ -26,7 +26,7 @@ uids_ag <- uid_df$UID[uid_df$Landcover != "GrassPasture"]
 uids_grass <- uid_df$UID[uid_df$Landcover == "GrassPasture"]
 
 # Set uids to use
-uids <- uids_ag[1:1000]
+uids <- uids_ag[1:100]
 
 # Set number of processes
 # Caps at number of cores - 1
@@ -51,8 +51,8 @@ for (n in 1:n_sessions) {
 	  # Write to log
 	  pid <- Sys.getpid()
 	  timestr <- format(Sys.time(), format = "%Y-%m-%d_%H%M")
-	  log_file <- file.path(log_dir, paste0("log_", timestr, "_", pid, ".txt"))
-	  sink(log_file, split = TRUE)
+	  #log_file <- file.path(log_dir, paste0("log_", timestr, "_", pid, ".txt"))
+	  #sink(log_file, split = TRUE)
   	  
   	print_ts("Running on process ID: ", pid)
 	
@@ -95,6 +95,8 @@ for (n in 1:n_sessions) {
   	                                  area_files = list.files(cell_dir, pattern = "buffered5k.tif", full.names = TRUE),
   	                                  output_dir = cell_stat_dir)
 	  
+  	#sink()
+  	
   })
 }
 
