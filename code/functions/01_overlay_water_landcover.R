@@ -79,6 +79,8 @@ overlay_water_landcover <- function(water_files, landcover_files, uid_raster, ui
     if (!file.exists(cell_10k_file) | overwrite == TRUE) {
       cell_rst <- buffer_rect(uid_rst, buffer_dist = 10000, match_value = uid,
                               out_file = cell_10k_file, overwrite = TRUE)
+    } else {
+      cell_rst <- rast(cell_10k_file)
     }
     
     # 5k buffer (for summarizing landscape later; not used further here)
