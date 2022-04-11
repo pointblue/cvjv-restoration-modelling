@@ -30,6 +30,7 @@ wxl_dir <- file.path(anl_dir, "water_x_landcover")
 fcl_dir <- file.path(anl_dir, "water_focal")
 prd_dir <- file.path(anl_dir, "bird_predictions")
 stat_dir <- file.path(anl_dir, "stats")
+cell_stat_dir <- file.path(stat_dir, "by_cell")
 
 # Landcover files
 lc_defs <- list("Unsuitable" = 0, "GrassPasture" = 1, "Corn" = 3, 
@@ -71,6 +72,6 @@ bird_model_cov_names <- c("COUNT_TYPE2", "roads5km")
 #mths <- month.abb[c(1:5, 7:12)] #no June
 mths <- month.abb[4]
 #tmax_files <- file.path(cov_dir, paste0("tmax_", mths, "_p44r33.tif"))
-tmax_files <- file.path(cov_dir, paste0("tmax_", mths, "_valley_snapped2.tif"))
+tmax_files <- file.path(cov_dir, paste0("tmax_", mths, "_valley_snapped.tif"))
 tmax_months <- mths
 tmax_names <- rep("tmax250m", length(mths))
