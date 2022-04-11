@@ -91,8 +91,10 @@ for (n in 1:n_sessions) {
   	
   	# Column that contains the names of the fields to extract prediction data for
   	# Fields with the same name in a flooding area are grouped
+  	area_5k_files <-  file.path(cell_dir, paste0("cell_", uids_subset[[n]], "_buffered5k.tif"))
   	stat_files <- extract_predictions(prd_files, 
-  	                                  area_files = list.files(cell_dir, pattern = "buffered5k.tif", full.names = TRUE),
+  	                                  area_files = area_5k_files,
+  	                                  n_predictions = 8,
   	                                  output_dir = cell_stat_dir)
 	  
   	#sink()
