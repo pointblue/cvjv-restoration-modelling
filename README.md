@@ -24,11 +24,11 @@ data file with some of the required data for predictions, including constant eBi
 includes model objects
 
 ## Required model covariates not included in project folder (too large for Github):
-### in V:\Project\wetland\FWSPartners\code\cvjv-restoration-modelling\data\other_covariates
+##### in V:\Project\wetland\FWSPartners\code\cvjv-restoration-modelling\data\other_covariates
 - monthly average water data
 - monthly tmax
 - roads raster
-### in V:\Project\wetland\FWSPartners\analysis\grid
+##### in V:\Project\wetland\FWSPartners\analysis\grid
 - grid raster
 
 ## Notes on processing
