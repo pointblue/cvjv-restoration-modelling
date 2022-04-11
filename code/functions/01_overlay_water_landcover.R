@@ -47,8 +47,8 @@ overlay_water_landcover <- function(water_files, landcover_files, uid_raster, ui
     
   } else if (is.character(uid_raster)) {
     
-    if (length(uid_raster) != 1) stop(add_ts("uid_raster be a single shapefile or filename"))
-    if (!file.exists(uid_raster)) stop(add_ts("uid_raster does not exist: ", field_shapefile, " not found."))
+    if (length(uid_raster) != 1) stop(add_ts("uid_raster be a single raster or filename"))
+    if (!file.exists(uid_raster)) stop(add_ts("uid_raster does not exist: ", uid_raster, " not found."))
     
     uid_rst <- rast(uid_raster)
     
@@ -67,50 +67,27 @@ overlay_water_landcover <- function(water_files, landcover_files, uid_raster, ui
   # Loop across unique cells
 	for (uid in uids) {
 		
+	  message_ts("Creating layers for uid ", uid, "...")
+	  
 	  # Subset lookup df if exists
 	  if (file.exists(uid_lkp_file)) {
 	    lkp_df <- uid_lkp_df[uid_lkp_df$UID == uid,]
 	  }
 	  
-	  cell_file <- file.path(cell_dir, paste0("cell_", uid, "_buffered.tif"))
-	  if (!file.exists(cell_file) | overwrite == TRUE) {
-	    
-	    # Identify cell
-	    message_ts("Subsetting to cell ", uid, "...")
-	    rcl_mat <- matrix(c(-Inf, uid - 1, NA, uid - 1, uid, 1, uid, Inf, NA), ncol = 3, byrow = TRUE)
-	    cell_rst <- classify(uid_rst, rcl_mat)
-	    
-	    message_ts("Buffering...")
-	    uid_cells <- unlist(cells(uid_rst, uid))
-	    uid_xys <- xyFromCell(uid_rst, uid_cells)
-	    
-	    # Calculate coordinates of rectangular buffer
-	    # Much quicker than geometric / circular one
-	    buffer_width <- 333 * 30 #in cells
-	    xmin <- min(uid_xys[,1]) - buffer_width - 15
-	    xmax <- max(uid_xys[,1]) + buffer_width - 15
-	    ymin <- min(uid_xys[,2]) - buffer_width - 15
-	    ymax <- max(uid_xys[,2]) + buffer_width - 15
-	    
-	    # Create raster and match extents (union)
-	    message_ts("Combining...")
-	    buff_rst <- rast(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
-	                     crs = crs(uid_rst), resolution = 30, vals = 0)
-	    buff_rst <- crop(buff_rst, cell_rst) #needed if near edge
-	    cell_rst <- crop(cell_rst, buff_rst) #drop wide swath of NAs
-	    
-	    # Combine
-	    cell_buff_rst <- lapp(c(cell_rst, buff_rst), fun = function(x, y) {
-	      ifelse(!is.na(x) & x == 1, x, y)
-	    }, filename = cell_file, overwrite = TRUE)
-	    
-	    message_ts("Cell raster created.")
-	    
-	  } else {
-	    message_ts("Loading raster for cell ", uid, "...")
-	    cell_rst <- rast(cell_file)
-	  }
-	  
+    # 10k buffer (for creating water layers used in prediction)
+    cell_10k_file <- file.path(cell_dir, paste0("cell_", uid, "_buffered10k.tif"))
+    if (!file.exists(cell_10k_file) | overwrite == TRUE) {
+      cell_rst <- buffer_rect(uid_rst, buffer_dist = 10000, match_value = uid,
+                              out_file = cell_10k_file, overwrite = TRUE)
+    }
+    
+    # 5k buffer (for summarizing landscape later; not used further here)
+    cell_5k_file <- file.path(cell_dir, paste0("cell_", uid, "_buffered5k.tif"))
+    if (!file.exists(cell_5k_file) | overwrite == TRUE) {
+      cell_5k_rst <- buffer_rect(uid_rst, buffer_dist = 5000, match_value = uid,
+                              out_file = cell_5k_file, overwrite = TRUE)
+    }
+    
 	  # Impose water
 	  for (wf in water_files) {
 	    
