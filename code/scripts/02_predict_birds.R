@@ -70,7 +70,7 @@ for (n in 1:n_sessions) {
 	
   	 
   	# Create mean neighborhood water rasters
-  	# Function defined in functions/04_water_moving_window.R
+  	# Function defined in functions/water_moving_window.R
   	fcl_files <- mean_neighborhood_water(wxl_files,                #previously-created water x landcover files
   	                                     distances = c(250, 5000), #250m and 5km
   	                                     output_dir = fcl_dir, 
@@ -108,7 +108,10 @@ f
 # Shows the values
 value(f)
 
-
+# Read and combine all stats
+message_ts("Reading and combining data...")
+long_df <- do.call(rbind, lapply(stat_files, function(x) readRDS(x)))
+saveRDS(long_df, file.path(stat_dir, "cell_summary_long.rds"))
 
 
 
