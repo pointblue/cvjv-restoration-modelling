@@ -4,7 +4,7 @@
 # If using a realtime-only or longterm-only model, pass the same set of layers to both water_files arguments
 #   The model object will only use the files from either the realtime or longterm
 # Returns character vector of processed files
-predict_bird_rasters <- function(water_files_realtime, water_files_longterm, scenarios, water_months,
+predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
                                  model_files, model_names, 
                                  static_cov_files, static_cov_names, 
                                  monthly_cov_files, monthly_cov_months, monthly_cov_names,
@@ -12,8 +12,7 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
                                  on_missing_landcover = "stop") {
 	
   # Load required packages
-  if (!require(rgdal)) stop(add_ts("Library rgdal is required"))
-  if (!require(raster)) stop(add_ts("Library raster is required"))
+  if (!require(terra)) stop(add_ts("Library terra is required"))
   if (!require(gbm)) stop(add_ts("Library gbm is required"))
   if (!require(dismo)) stop(add_ts("Library dismo is required"))
   
@@ -23,8 +22,6 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   if (!(all(water_months %in% month.abb))) stop(add_ts("Argument 'water_months' must consist of valid 3-letter month abbreviations"))
   
   # Check input files
-  if (!all(file.exists(water_files_realtime))) stop(add_ts("The following water_files do not exist:\n", 
-                                                  paste0(water_files_realtime[!file.exists(water_files_realtime)], collapse = ", ")))
   if (!all(file.exists(water_files_longterm))) stop(add_ts("The following water_files do not exist:\n", 
                                                   paste0(water_files_longterm[!file.exists(water_files_longerm)], collapse = ", ")))
   if (!all(file.exists(model_files))) stop(add_ts("The following model_files do not exist:\n", 
@@ -62,18 +59,10 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   landcover_lt_df <- data.frame(NameModel = c("long_rXw_250m", "long_2wetlandXw250m", "long_treatXw_250m", 
                                               "long_cornXw_250m", "long_grainXw_250m", "long_otherXw_250m",
                                               "long_rXw_5km", "long_2wetlandXw5km", "long_treatXw_5km", "long_allcropXw_5km"), 
-                                NameLandcover = c("Rice", "Wetland_SemiSeas", "TreatedWetland", "Corn", "Grain", "AltCrop",
-                                                  "Rice", "Wetland_SemiSeas", "TreatedWetland", "NonRiceCrops"), 
+                                NameLandcover = c("Rice", "WetlandNatural", "WetlandTreated", "Corn", "GrainPlus", "AlternatingCrop",
+                                                  "Rice", "WetlandNatural", "WetlandTreated", "NonRiceCrop"), 
                                 Distance = c(rep("250m", 6), rep("5000m", 4)))
   landcover_lt_df$LandcoverDistance <- paste(landcover_lt_df$NameLandcover, landcover_lt_df$Distance, sep = "_")
-  
-  # Real-time (imposed)
-  landcover_rt_df <- data.frame(NameModel = c("rXw_250m", "wetland2Xw250m", "treatXw_250m", "cornXw_250m", "grainXw_250m", "otherXw_250m",
-                                              "rXw_5km", "wetland2Xw5km", "treatXw_5km", "allcropXw_5km"), 
-                                NameLandcover = c("Rice", "Wetland_SemiSeas", "TreatedWetland", "Corn", "Grain", "AltCrop",
-                                                  "Rice", "Wetland_SemiSeas", "TreatedWetland", "NonRiceCrops"), 
-                                Distance = c(rep("250m", 6), rep("5000m", 4)))
-  landcover_rt_df$LandcoverDistance <- paste(landcover_rt_df$NameLandcover, landcover_rt_df$Distance, sep = "_")
   
   # Load static covariates
   static_cov_stk <- stack(static_cov_files)
@@ -83,7 +72,9 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   processed_files <- c()
   
   # Get unique flooding areas
-  flood_areas <- unique(extract_subelement(strsplit(basename(water_files_realtime), "_"), 1))
+  fns_split <- strsplit(basename(water_files_realtime), "_")
+  flood_areas <- unique(paste0(extract_subelement(fns_split, 1), "_",
+                               extract_subelement(fns_split, 2)))
   
 	# Loop across flooding areas
 	for (fa in flood_areas) {
@@ -166,50 +157,16 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   		  wtr_lt_stk <- stack(landcover_lt_df$File)
   		  names(wtr_lt_stk) <- landcover_lt_df$NameModel
   		  
-  			# REALTIME WATER (imposed)
-  			message_ts("Checking and loading imposed water x landcover moving window files...")
-  			
-  			# Check files
-  			landcover_rt_df$File <- mapply(nm = landcover_rt_df$NameLandcover, dst = landcover_rt_df$Distance, 
-  			                               FUN = function(nm, dst) {
-  			                                 y <- mth_files[grep(paste0(nm, "_.*", dst), mth_files)]
-  			                                 if(length(y) > 1) {
-  			                                   stop(add_ts("Multiple matches found for real-time (imposed) water files"))
-  			                                 } else if (length(y) == 0) {
-  			                                   y <- 0
-  			                                 }
-  			                                 y
-  			                               })
-  			
-  			if (any(is.na(landcover_rt_df$File))) {
-  			  
-  			  if(on_missing_landcover == "stop") {
-  			    stop(add_ts("The following imposed water x landcover moving window combinations are missing from water_files_realtime for flood area ", fa, 
-  			                ", scenario ", scn, ", and month ", mth, ":\n\t",
-  			                paste0(landcover_rt_df$LandcoverDistance[is.na(landcover_rt_df$File)], collapse = "\n\t"),
-  			                "\n\nHalting execultion."))
-  			  } else {
-  			    message_ts("The following imposed water x landcover moving window combinations are missing from water_files_realtime for flood area ", fa, 
-  			                ", scenario ", scn, ", and month ", mth, ":\n\t",
-  			                paste0(landcover_rt_df$LandcoverDistance[is.na(landcover_rt_df$File)], collapse = "\n\t"),
-  			               "\n\nMoving to next...")
-  			    next
-  			  }
-  			  
-  			}
-  			
-  			# Load required imposed water files and match names
-  			message_ts("Loading imposed water x landcover moving window files...")
-  			wtr_rt_stk <- stack(landcover_rt_df$File)
-  			names(wtr_rt_stk) <- landcover_rt_df$NameModel
-  			
   			# Load basic covariates
   			message_ts("Loading model covariates...")
   			#static_cov_stk <- stack(static_cov_files) #already loaded
   			#names(static_cov_stk) <- static_cov_names
   			
   			# Load month file(s)
-        if (!(mth %in% monthly_cov_months)) stop(add_ts("Invalid month: no matching month files for month ", mth, ". Please update files in cov_dir and tmax files in definitions.R"))
+        if (!(mth %in% monthly_cov_months)) {
+          stop(add_ts("Invalid month: no matching month files for month ", mth, 
+                      ". Please update files in cov_dir and tmax files in definitions.R"))
+        }
   			mth_match <- which(monthly_cov_months == mth)
   			#print(mth)
   			#str(mth)
@@ -223,27 +180,19 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   			#print(extent(static_cov_stk))
   			#print(extent(mth_cov_stk))
   			#print(extent(wtr_lt_stk))
-  			#print(extent(wtr_rt_stk))
   			if (identical(extent(static_cov_stk), extent(mth_cov_stk))) {
   			  message_ts("As stack...")
   			  cov_stk <- stack(static_cov_stk, mth_cov_stk)
-  			  cov_stk <- crop(cov_stk, wtr_rt_stk)
+  			  cov_stk <- crop(cov_stk, wtr_lt_stk)
   			} else {
   			  message_ts("Individually...")
-  			  static_cov_stk <- crop(static_cov_stk, wtr_rt_stk)
-  			  mth_cov_stk <- crop(mth_cov_stk, wtr_rt_stk)
+  			  static_cov_stk <- crop(static_cov_stk, wtr_lt_stk)
+  			  mth_cov_stk <- crop(mth_cov_stk, wtr_lt_stk)
   			  cov_stk <- stack(static_cov_stk, mth_cov_stk)
   			}
-  			wtr_lt_stk <- crop(wtr_lt_stk, wtr_rt_stk)
   			
   			# Check extents and combine
-  			if (!identical(extent(wtr_lt_stk), extent(wtr_rt_stk))) {
-  			  message_ts("Real-time water layers:\n", paste(landcover_rt_df$File, collapse = "\n"))
-  			  message_ts("Long-term water layers:\n", paste(landcover_lt_df$File, collapse = "\n"))
-  			  stop(add_ts("Real-time and long-term water layers have different extents. Check specified files."))
-  			}
-  			
-  			cov_stk <- stack(cov_stk, wtr_lt_stk, wtr_rt_stk)
+  			cov_stk <- stack(cov_stk, wtr_lt_stk)
   			
   			# Loop across bird models
   			for (mn in 1:length(model_files)) {
@@ -271,8 +220,9 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
   				message_ts("Output file: ", prd_file)
   				
   				# Must define factors when predicting
-  				prd_rst <- raster::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
-  							filename = prd_file, overwrite = TRUE)
+  				prd_rst <- terra::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
+  				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
+  				                   filename = prd_file, overwrite = TRUE)
   				print(summary(prd_rst))
   				message_ts("Complete.")
   				
