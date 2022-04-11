@@ -1,8 +1,6 @@
-# Code to create bird predictions for realtime models of the full Bird Returns dataset
+# Code to create bird predictions for longterm models of the full Bird Returns dataset
 
-# Predict bird rasters using the combination model of realtime and longterm
-# If using a realtime-only or longterm-only model, pass the same set of layers to both water_files arguments
-#   The model object will only use the files from either the realtime or longterm
+# Predict bird rasters using the longterm model
 # Returns character vector of processed files
 predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
                                  model_files, model_names, 
@@ -72,18 +70,18 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   processed_files <- c()
   
   # Get unique flooding areas
-  fns_split <- strsplit(basename(water_files_realtime), "_")
+  fns_split <- strsplit(basename(water_files_longterm), "_")
   flood_areas <- unique(paste0(extract_subelement(fns_split, 1), "_",
                                extract_subelement(fns_split, 2)))
   
 	# Loop across flooding areas
 	for (fa in flood_areas) {
 
-		message_ts("Working on flooding area ", fa)
+		message_ts("Working on area ", fa)
 	  fac <- clean_string(fa)
 		
 		# Files for this flooding area
-		fa_files <- water_files_realtime[grepl(fa, water_files_realtime)]
+		fa_files <- water_files_longterm[grepl(fa, water_files_longterm)]
 		
 		# Loop across unique scenarios
 		for (scn in scenarios) {
@@ -91,7 +89,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
 			message_ts("Working on scenario ", scn)
 		  scn_files <- fa_files[grepl(scn, fa_files)]
 		  if (length(scn_files) == 0) {
-		    message_ts("WARNING: no files found matching scneario ", scn, " for flood area ", fa, ". Moving to next...")
+		    message_ts("WARNING: no files found matching scenario ", scn, " for flood area ", fa, ". Moving to next...")
 		    next
 		  }
 		  
@@ -125,10 +123,10 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
                           			       FUN = function(nm, dst) {
                             			         y <- water_files_longterm[grep(paste0(mth, ".*", nm, "_.*", dst), water_files_longterm)]
                             			         if(length(y) > 1) {
-                            			           print(y)
+                            			           #print(y)
                             			           message_ts("Filtering by flood area...")
                             			           y <- y[grepl(fa, y)]
-                            			           print(y)
+                            			           #print(y)
                             			           if(length(y) > 1) stop(add_ts("Multiple landcover matches found. Must specify."))
                             			         } else if (length(y) == 0) {
                             			           y <- 0
@@ -139,12 +137,12 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   		  if (any(is.na(landcover_lt_df$File))) {
   		    
   		    if(on_missing_landcover == "stop") {
-  		      stop(add_ts("The following longterm water x landcover moving window combinations are missing from water_files_realtime for flood area ", fa, 
+  		      stop(add_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
   		                  ", scenario ", scn, ", and month ", mth, ":\n\t",
   		                  paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
   		                  "\n\nHalting execultion."))
   		    } else {
-  		      message_ts("The following longterm water x landcover moving window combinations are missing from water_files_realtime for flood area ", fa, 
+  		      message_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
   		                 ", scenario ", scn, ", and month ", mth, ":\n\t",
   		                 paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
   		                 "\n\nMoving to next...")
