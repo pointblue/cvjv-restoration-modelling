@@ -9,10 +9,8 @@ overwrite <- FALSE
 # Load definitions and code
 code_dir <- "V:/Project/wetland/FWSPartners/code/cvjv-restoration-modelling/code"
 def_file <- file.path(code_dir, "definitions.R")
-code_files <- file.path(code_dir, "functions",
-                        c("00_shared_functions.R"))
+code_files <- file.path(code_dir, "functions", "00_shared_functions.R")
 sapply(c(def_file, code_files), FUN = function(x) source(x))
-
 
 # Packages
 library(terra)
