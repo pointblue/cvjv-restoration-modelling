@@ -77,6 +77,7 @@ extract_predictions <- function(prediction_files, area_files,
         								 "Model" = substr(extract_subelement(fn_split, 7), 0, nchar(extract_subelement(fn_split, 7)) - 4),
         								 "ModelLocation" = extract_subelement(fn_split, 6),
         								 "CellMean" = rep(NA),
+        								 "CellStdDev" = rep(NA),
         								 "LandscapeMean" = rep(NA))
 							 
 		# Load prediction rasters
@@ -99,6 +100,10 @@ extract_predictions <- function(prediction_files, area_files,
 		zonal_df <- zonal(prd_stk, area_rst, fun = mean, na.rm = TRUE)
 		prd_df$CellMean <- as.numeric(zonal_df[zonal_df$lyr1 == 1, 2:ncol(zonal_df)])
 		prd_df$LandscapeMean <- as.numeric(zonal_df[zonal_df$lyr1 == 0, 2:ncol(zonal_df)])
+		
+		message_ts("Calculating standard deviation...")
+		zonal_sd_df <- zonal(prd_stk, area_rst, fun = function(x) {sd(x, na.rm = TRUE)})
+		prd_df$CellStdDev <- as.numeric(zonal_sd_df[zonal_sd_df$lyr1 == 1, 2:ncol(zonal_sd_df)])
 		
 		# Export
 		saveRDS(prd_df, stat_file)
