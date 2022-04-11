@@ -10,6 +10,18 @@ add_ts <- function(...) paste0("[", Sys.time(), "] - ", ...)
 # Add as wrapper for base 'message' function
 message_ts <- function(...) message(add_ts(...))
 
+# Add as wrapper for base 'print' function
+# Futures can't capture messages (output to stderr) so use print instead
+print_ts <- function(...) print(add_ts(...))
+
+printmessage_ts <- function(..., type = "message") {
+  if (type == "message") {
+    message_ts(...)
+  } else {
+    print_ts(...)
+  }
+}
+
 # Function to check directories exist, optionally loading
 check_dir <- function(directory, create = FALSE, verbose = FALSE) {
   
@@ -49,7 +61,7 @@ clean_string <- function(x, sub_char = "-", ...) {
   y <- gsub(paste0(sub_char, "+"), sub_char, y, ...)
   
   # Drop terminal sub_char
-  y <- gsub(paste0(sub_car, "$"), "", y, ...)
+  y <- gsub(paste0(sub_char, "$"), "", y, ...)
   
   return(y)
 }
@@ -62,7 +74,7 @@ clean_string_remove_underscores <- function(x, sub_char = "-", ...) {
   y <- gsub(paste0(sub_char, "+"), sub_char, y, ...)
   
   # Drop terminal sub_char
-  y <- gsub(paste0(sub_car, "$"), "", y, ...)
+  y <- gsub(paste0(sub_char, "$"), "", y, ...)
   
   return(y)
 }
@@ -153,6 +165,83 @@ parse_filename <- function(files) {
                         "AdditionalInfo" = info)
   
   return(file_df)
+  
+}
+
+# Different rectangular buffer method
+# Buff dist in map units (usually m)
+buffer_rect <- function(in_rst, buffer_dist, match_value = 1, fill_value = 0, out_file = NULL, overwrite = FALSE) {
+  
+  # Load required packages
+  if (!require(terra)) stop(add_ts("Library terra is required"))
+  
+  # Check simple parameters
+  if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
+  if (!is.numeric(buffer_dist)) stop(add_ts("Argument 'buffer_dist' must be numeric"))
+  if (!is.numeric(match_value)) stop(add_ts("Argument 'match_value' must be numeric"))
+  if (!is.na(fill_value) & !is.numeric(fill_value)) stop(add_ts("Argument 'fill_value' must be numeric or NA"))
+  
+  # Check path of out_file
+  if (!is.null(out_file)) {
+    
+    out_path <- dirname(out_file)
+    if(!file.exists(out_path)) stop(add_ts(out_path, " does not exist."))
+    
+    if (file.exists(out_file) & overwrite != TRUE) {
+      message_ts("out_file already exists and overwrite != TRUE. Exiting...")
+      return(rast(out_file))
+    }
+    
+  } 
+  
+  # Check and load guide raster
+  if (class(in_rst) == "SpatRaster") {
+    
+    match_rst <- in_rst
+    
+  } else if (is.character(in_rst)) {
+    
+    if (length(rst) != 1) stop(add_ts("in_rst be a single raster or filename"))
+    if (!file.exists(rst)) stop(add_ts("in_rst does not exist: ", in_rst, " not found."))
+    
+    match_rst <- rast(in_rst)
+    
+  } else {
+    
+    stop(add_ts("in_rst must be a raster or filename of a raster"))
+    
+  }
+  
+  # Calculate number of cells
+  message_ts("Converting distance of ", buffer_dist, " map units to cells...")
+  xres <- res(match_rst)[1]
+  yres <- res(match_rst)[2]
+  x_dist <- round(buffer_dist / xres) * xres
+  y_dist <- round(buffer_dist / yres) * yres
+  
+  # Get coordinates
+  match_cells <- unlist(cells(match_rst, match_value))
+  match_xys <- xyFromCell(match_rst, match_cells)
+  
+  xmin <- min(match_xys[,1]) - x_dist - xres / 2
+  xmax <- max(match_xys[,1]) + x_dist - xres / 2
+  ymin <- min(match_xys[,2]) - y_dist - yres / 2
+  ymax <- max(match_xys[,2]) + y_dist - yres / 2
+  
+  # Buffer
+  message_ts("Buffering...")
+  buff_rst <- rast(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
+                   crs = crs(match_rst), resolution = c(xres, yres), vals = fill_value)
+  buff_rst <- crop(buff_rst, match_rst) #needed if near edge
+  match_rst <- crop(match_rst, buff_rst) #drop wide swath of areas outside buffer
+  
+  # Combine
+  combined_rst <- lapp(c(match_rst, buff_rst), fun = function(x, y) {
+    ifelse(!is.na(x) & x == match_value, 1, y)
+  }, filename = out_file, overwrite = TRUE)
+  
+  message_ts("Complete")
+  return(combined_rst)
   
 }
 
