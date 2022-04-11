@@ -29,7 +29,7 @@ includes model objects
 - monthly tmax
 - roads raster
 ##### in V:\Project\wetland\FWSPartners\analysis\grid
-- grid raster
+- grid raster unique_ids_masked.tif
 
 ## Notes on processing
 Multi-core processing currently implemented using the future package. Convenient but with the major downside of messages and other conditions not being loggable in any way due to a limitation in R with capturing stderr().  
