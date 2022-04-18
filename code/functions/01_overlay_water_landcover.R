@@ -99,6 +99,16 @@ overlay_water_landcover <- function(water_files, landcover_files, uid_raster, ui
 	    wmth <- extract_subelement(wfn_split, 3)
 	    wyr <- extract_subelement(wfn_split, 4)
 	    
+	    # Skip if all files have been processed
+	    landcovers <- extract_subelement(strsplit(landcover_files, "_"), 1)
+	    out_files <- file.path(wxl_dir, paste0("cell_", uid, "_", 
+	                                          wyr, "_", wmth, "_water_x_",
+	                                          landcovers, ".tif"))
+	    if (all(file.exists(wxl_file)) & overwrite != TRUE) {
+	      message_ts("All landcover overlays created for this water file. Moving to next...")
+	      next
+	    }
+	    
 	    # Load
 	    wtr_rst <- rast(wf)
 	    
