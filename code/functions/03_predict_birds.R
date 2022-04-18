@@ -217,15 +217,21 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   				message_ts("Predicting surface...")
   				message_ts("Output file: ", prd_file)
   				
-  				# Must define factors when predicting
-  				prd_rst <- terra::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
-  				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
-  				                   filename = prd_file, overwrite = TRUE)
-  				print(summary(prd_rst))
-  				message_ts("Complete.")
+  				tryCatch({
+    				# Must define factors when predicting
+    				prd_rst <- terra::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
+    				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
+    				                   filename = prd_file, overwrite = TRUE)
+    				print(summary(prd_rst))
+    				message_ts("Complete.")
   				
-  				# Append to output
-  				processed_files <- c(processed_files, prd_file)
+    				# Append to output
+    				processed_files <- c(processed_files, prd_file)
+    				
+  				}, error = function(e) {
+  				  message_ts("Error when predicting: ", e)
+  				  message_ts("Moving to next...")
+  				})
   
   			}
   			
