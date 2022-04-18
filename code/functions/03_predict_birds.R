@@ -7,7 +7,8 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
                                  static_cov_files, static_cov_names, 
                                  monthly_cov_files, monthly_cov_months, monthly_cov_names,
                                  output_dir, overwrite = FALSE,
-                                 on_missing_landcover = "stop") {
+                                 on_missing_landcover = "stop",
+                                 on_error_rerun = FALSE) {
 	
   # Load required packages
   if (!require(terra)) stop(add_ts("Library terra is required"))
@@ -50,6 +51,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   
   # Check other parameters
   if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
+  if (!is.logical(on_error_rerun)) stop(add_ts("Argument 'on_error_rerun' must be TRUE or FALSE"))
   if (!(on_missing_landcover %in% c("next", "stop"))) stop(add_ts("Argument 'on_missing_landcover' must either be 'stop' or 'next'"))
   
   # Define what water files are required
@@ -71,8 +73,9 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   
   # Get unique flooding areas
   fns_split <- strsplit(basename(water_files_longterm), "_")
+  uid <- extract_subelement(fns_split, 2)
   flood_areas <- unique(paste0(extract_subelement(fns_split, 1), "_",
-                               extract_subelement(fns_split, 2)))
+                               uid))
   
 	# Loop across flooding areas
 	for (fa in flood_areas) {
@@ -121,13 +124,11 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   		  # Check files
   		  landcover_lt_df$File <- mapply(nm = landcover_lt_df$NameLandcover, dst = landcover_lt_df$Distance, 
                           			       FUN = function(nm, dst) {
-                            			         y <- water_files_longterm[grep(paste0(mth, ".*", nm, "_.*", dst), water_files_longterm)]
+                            			         y <- fa_files[grep(paste0(mth, ".*", nm, "_.*", dst), fa_files)]
+                            			         #print(y)
                             			         if(length(y) > 1) {
-                            			           #print(y)
-                            			           message_ts("Filtering by flood area...")
-                            			           y <- y[grepl(fa, y)]
-                            			           #print(y)
-                            			           if(length(y) > 1) stop(add_ts("Multiple landcover matches found. Must specify."))
+                            			           stop(add_ts("Multiple files found for ", fac, ", ", mth, ", ", nm, ", ", dst, 
+                            			                       ". Should only be one."))
                             			         } else if (length(y) == 0) {
                             			           y <- 0
                             			         }
@@ -192,6 +193,9 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   			# Check extents and combine
   			cov_stk <- stack(cov_stk, wtr_lt_stk)
   			
+  			# Error counter
+  			error_counter <- 0
+  			
   			# Loop across bird models
   			for (mn in 1:length(model_files)) {
   			  
@@ -229,9 +233,76 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
     				processed_files <- c(processed_files, prd_file)
     				
   				}, error = function(e) {
+  				  
   				  message_ts("Error when predicting: ", e)
   				  message_ts("Moving to next...")
+  				  
+  				  error_counter <<- error_counter + 1
+  				  
   				})
+  				
+  				# Break if encountered multiple errors with this cell, optionally re-running prior processing
+  				if (error_counter > 1) {
+  				  
+  				  if (on_error_rerun == TRUE) {
+  				    
+  				    message_ts("Multiple errors encountered with cell ", fac, ". Attempting to reprocess input layers...")
+  				    
+  				    # TODO: Contains parameters not passed via function call
+  				    
+  				    tryCatch({
+    				    
+    				    # Overlay water and landcover ----------------------------------
+    				    wxl_files_temp <- overlay_water_landcover(water_files_temp, 
+    				                                         model_lc_files, #from definitions,
+    				                                         uid_raster = file.path(grid_dir, "unique_ids_masked.tif"),
+    				                                         uids = uids_subset[[n]],
+    				                                         uid_lkp_file = file.path(grid_dir, "uid_full_lookup.rds"),
+    				                                         imposed_landcover = "WetlandNatural",
+    				                                         cell_dir = cell_dir, 
+    				                                         output_dir = wxl_dir, 
+    				                                         overwrite = TRUE)
+    				    #printmessage = "print") #implement for logging
+    				    
+    				    
+    				    # Create mean neighborhood water rasters
+    				    # Function defined in functions/water_moving_window.R
+    				    fcl_files_temp <- mean_neighborhood_water(wxl_files_temp,                #previously-created water x landcover files
+    				                                         distances = c(250, 5000), #250m and 5km
+    				                                         output_dir = fcl_dir, 
+    				                                         overwrite = TRUE)
+    				    
+    				    # Re-predict
+    				    prd_files_temp <- predict_bird_rasters(fcl_files,                  
+    				                                      scenarios = "2011-2021",
+    				                                      water_months = c("Apr"),
+    				                                      model_files = shorebird_model_files_long, 
+    				                                      model_names = shorebird_model_names_long, 
+    				                                      static_cov_files = bird_model_cov_files, 
+    				                                      static_cov_names = bird_model_cov_names,
+    				                                      monthly_cov_files = tmax_files,
+    				                                      monthly_cov_months = tmax_months,
+    				                                      monthly_cov_names = tmax_names,
+    				                                      output_dir = prd_dir)
+    				    
+    				    # Append
+    				    processed_files <- c(processed_files, prd_files_temp)
+    				    
+  				    }, error = function(e) {
+  				      
+  				      message_ts("Error when attempting to reprocess files for area: ", fac)
+  				      message_ts("Will need to be fixed manually. Moving to next...")
+  				      
+  				    })
+    				    
+  				  } else {
+  				    
+  				    message_ts("Multiple errors encountered with cell ", fac, ". Skipping to next cell...")
+  				    break 
+  				   
+  				  }
+  				  
+  				}
   
   			}
   			
