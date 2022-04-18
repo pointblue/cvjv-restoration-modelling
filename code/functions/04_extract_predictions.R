@@ -57,7 +57,7 @@ extract_predictions <- function(prediction_files, area_files,
 		stat_file <- file.path(output_dir, clean_name)
 		if (file.exists(stat_file)) {
 			
-			message_ts("Data for flooding area ", fa, " and field ", fld, " already calculated. Moving to next...")
+			message_ts("Data for area ", af, " already calculated. Moving to next...")
 			next
 			
 		} 
