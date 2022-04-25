@@ -253,7 +253,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   				    tryCatch({
     				    
     				    # Overlay water and landcover ----------------------------------
-    				    wxl_files_temp <- overlay_water_landcover(water_files_temp, 
+    				    wxl_files_temp <- overlay_water_landcover(water_files,
     				                                         model_lc_files, #from definitions,
     				                                         uid_raster = file.path(grid_dir, "unique_ids_masked.tif"),
     				                                         uids = uids_subset[[n]],
@@ -283,14 +283,15 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
     				                                      monthly_cov_files = tmax_files,
     				                                      monthly_cov_months = tmax_months,
     				                                      monthly_cov_names = tmax_names,
-    				                                      output_dir = prd_dir)
+    				                                      output_dir = prd_dir,
+    				                                      on_error_rerun = FALSE) #set to false to prevent endless recursion
     				    
     				    # Append
     				    processed_files <- c(processed_files, prd_files_temp)
     				    
   				    }, error = function(e) {
   				      
-  				      message_ts("Error when attempting to reprocess files for area: ", fac)
+  				      message_ts("Error when attempting to reprocess files for area ", fac, ": ", e)
   				      message_ts("Will need to be fixed manually. Moving to next...")
   				      
   				    })
