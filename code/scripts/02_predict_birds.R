@@ -26,7 +26,7 @@ uids_ag <- uid_df$UID[uid_df$Landcover != "GrassPasture"]
 uids_grass <- uid_df$UID[uid_df$Landcover == "GrassPasture"]
 
 # Set uids to use
-uids <- uids_ag[1:100]
+uids <- uids_ag[1:1000]
 
 # Set number of processes
 # Caps at number of cores - 1
@@ -68,16 +68,16 @@ for (n in 1:n_sessions) {
 	                                       overwrite = FALSE)
 	                                       #printmessage = "print") #implement for logging
 	
-  	 
+  	
   	# Create mean neighborhood water rasters
   	# Function defined in functions/water_moving_window.R
   	fcl_files <- mean_neighborhood_water(wxl_files,                #previously-created water x landcover files
   	                                     distances = c(250, 5000), #250m and 5km
   	                                     output_dir = fcl_dir, 
-  	                                     overwrite = FALSE)      #not needed with pre-trimming
+  	                                     overwrite = FALSE)
   	
   	# Predict							 
-  	prd_files <- predict_bird_rasters(fcl_files,                  
+  	prd_files <- predict_bird_rasters(water_files_longterm = fcl_files,                  
   	                                  scenarios = "2011-2021",
   	                                  water_months = c("Apr"),
   	                                  model_files = shorebird_model_files_long, 
@@ -87,7 +87,8 @@ for (n in 1:n_sessions) {
   	                                  monthly_cov_files = tmax_files,
   	                                  monthly_cov_months = tmax_months,
   	                                  monthly_cov_names = tmax_names,
-  	                                  output_dir = prd_dir)
+  	                                  output_dir = prd_dir,
+  	                                  on_error_rerun = TRUE)
   	
   	# Column that contains the names of the fields to extract prediction data for
   	# Fields with the same name in a flooding area are grouped
@@ -108,10 +109,14 @@ f
 # Shows the values
 value(f)
 
+#area_5k_files <- file.path(cell_dir, paste0("cell_", uids, "_buffered5k.tif"))
+#prd_files <- list.files(prd_dir, pattern = ".tif$", full.names = TRUE)
+
 # Read and combine all stats
 message_ts("Reading and combining data...")
+stat_files <- list.files(cell_stat_dir, pattern = "summary.rds$", full.names = TRUE)
 long_df <- do.call(rbind, lapply(stat_files, function(x) readRDS(x)))
 saveRDS(long_df, file.path(stat_dir, "cell_summary_long.rds"))
-
+write.csv(long_df, file.path(stat_dir, "cell_summary_long.csv"), row.names = FALSE)
 
 
