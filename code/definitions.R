@@ -32,6 +32,8 @@ prd_dir <- file.path(anl_dir, "bird_predictions")
 stat_dir <- file.path(anl_dir, "stats")
 cell_stat_dir <- file.path(stat_dir, "by_cell")
 
+plot_dir <- file.path(anl_dir, "plots")
+
 # Landcover files
 lc_defs <- list("Unsuitable" = 0, "GrassPasture" = 1, "Corn" = 3, 
                 "GrainPlus" = c(5, 7, 13), "Alfalfa" = 11, "Rice" = 12, 
