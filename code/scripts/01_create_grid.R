@@ -74,6 +74,7 @@ if (!file.exists(uid_file) | overwrite == TRUE) {
   
   message_ts("Assigning values...")
   values(agg_rst) <- 1:ncell(agg_rst)
+  writeRaster(agg_rst, file.path(grid_dir, "unique_ids_coarse.tif"), overwrite = TRUE)
   
   message_ts("Disaggregating...")
   uid_rst <- disagg(agg_rst, fact = 20, method = "near", filename = uid_file, overwrite = TRUE)
@@ -98,46 +99,52 @@ if (!file.exists(uid_masked_file) | overwrite == TRUE) {
 }
 uid_rst <- rast(uid_masked_file)
 
-
 # Split landcover and get unique ids
 # Defined in definitions.R
 print(lc_defs)
+lc_uid_files <- file.path(grid_dir, paste0("unique_ids_", names(lc_defs), ".rds"))
+if (all(file.exists(lc_uid_files)) & overwrite != TRUE) {
+  
+  message_ts("UIDs already split by landcover. Loading from file...")
 
-for (n in 1:length(lc_defs)) {
-  
-  lc_name <- names(lc_defs)[n]
-  lc_codes <- lc_defs[[n]]
-  lc_codes_str <- paste0(lc_codes, collapse = ", ")
-  message_ts("Working on landcover layer for ", lc_name, " using code(s): ", lc_codes_str)
-  
-  lc_split_file <- file.path(lc_dir, paste0(lc_name, "_2014-2021.tif"))
-  if (!file.exists(lc_split_file) | overwrite == TRUE) {
+} else { 
+  for (n in 1:length(lc_defs)) {
     
-    message_ts("Building reclassification matrix...")
-    rcl_df <- rbind(data.frame("Old" = lc_codes, "New" = rep(1)),
-                    data.frame("Old" = unlist(lc_defs)[!(unlist(lc_defs) %in% lc_codes)], "New" = rep(0)))
-    rcl_mat <- as.matrix(rcl_df)
-    print(rcl_mat)
+    lc_name <- names(lc_defs)[n]
+    lc_codes <- lc_defs[[n]]
+    lc_codes_str <- paste0(lc_codes, collapse = ", ")
+    message_ts("Working on landcover layer for ", lc_name, " using code(s): ", lc_codes_str)
     
-    message_ts("Reclassifying...")
-    lc_split_rst <- classify(lc_rst, rcl_mat, filename = lc_split_file, overwrite = TRUE)
+    lc_split_file <- file.path(lc_dir, paste0(lc_name, "_2014-2021.tif"))
+    if (!file.exists(lc_split_file) | overwrite == TRUE) {
+      
+      message_ts("Building reclassification matrix...")
+      rcl_df <- rbind(data.frame("Old" = lc_codes, "New" = rep(1)),
+                      data.frame("Old" = unlist(lc_defs)[!(unlist(lc_defs) %in% lc_codes)], "New" = rep(0)))
+      rcl_mat <- as.matrix(rcl_df)
+      print(rcl_mat)
+      
+      message_ts("Reclassifying...")
+      lc_split_rst <- classify(lc_rst, rcl_mat, filename = lc_split_file, overwrite = TRUE)
+      
+    } else {
+      
+      message_ts("Landcover layer already split. Loading...")
+      lc_split_rst <- rast(lc_split_file)
+      
+    }
     
-  } else {
+    message_ts("Getting unique ids...")
+    uid_lc_rst <- mask(uid_rst, lc_split_rst, maskvalues = c(NA, 0))
+    uid_lc_vals <- values(uid_lc_rst, mat = FALSE, na.rm = TRUE)
+    uid_lc_df <- data.frame("UID" = uid_lc_vals, "Landcover" = lc_name) %>%
+      group_by(UID, Landcover) %>%
+      summarize(Count = n())
     
-    message_ts("Landcover layer already split. Loading...")
-    lc_split_rst <- rast(lc_split_file)
+    message_ts("Found ", nrow(uid_lc_df), " matches.")
+    saveRDS(uid_lc_df, file.path(grid_dir, paste0("unique_ids_", lc_name, ".rds")))
     
   }
-  
-  message_ts("Getting unique ids...")
-  uid_lc_rst <- mask(uid_rst, lc_split_rst, maskvalues = c(NA, 0))
-  uid_lc_vals <- values(uid_lc_rst, mat = FALSE, na.rm = TRUE)
-  uid_lc_df <- data.frame("UID" = uid_lc_vals, "Landcover" = lc_name) %>%
-    group_by(UID, Landcover) %>%
-    summarize(Count = n())
-  
-  message_ts("Found ", nrow(uid_lc_df), " matches.")
-  saveRDS(uid_lc_df, file.path(grid_dir, paste0("unique_ids_", lc_name, ".rds")))
   
 }
 
@@ -152,19 +159,25 @@ uid_sum_df <- uid_df %>%
   group_by(UID) %>%
   mutate(Percentage = Count / 4, #400 30x30m cells in each block x 100 for percent
          Plurality = ifelse(Count == max(Count), TRUE, FALSE))
-write.csv(uid_sum_df, file.path(grid_dir, paste0("unique_ids_combined.csv")), row.names = FALSE)
+write.csv(uid_sum_df, file.path(grid_dir, "unique_ids_combined.csv"), row.names = FALSE)
 
 uid_suit_df <- uid_sum_df %>%
   filter(Landcover != "Unsuitable" & Plurality == TRUE)
-write.csv(uid_suit_df, file.path(grid_dir, paste0("unique_ids_suitable.csv")), row.names = FALSE)
+write.csv(uid_suit_df, file.path(grid_dir, "unique_ids_suitable.csv"), row.names = FALSE)
 
 uid_grass_df <- uid_suit_df %>%
   filter(Landcover == "GrassPasture")
-write.csv(uid_grass_df, file.path(grid_dir, paste0("unique_ids_grass.csv")), row.names = FALSE)
+write.csv(uid_grass_df, file.path(grid_dir, "unique_ids_grass.csv"), row.names = FALSE)
 
 uid_ag_df <- uid_suit_df %>%
   filter(Landcover != "GrassPasture")
-write.csv(uid_ag_df, file.path(grid_dir, paste0("unique_ids_ag.csv")), row.names = FALSE)
+write.csv(uid_ag_df, file.path(grid_dir, "unique_ids_ag.csv"), row.names = FALSE)
+
+# Get xy positions
+uid_cell_rst <- rast(file.path(grid_dir, "unique_ids_coarse.tif"))
+uid_suit_df$Easting <- xFromCell(uid_cell_rst, uid_suit_df$UID)
+uid_suit_df$Northing <- yFromCell(uid_cell_rst, uid_suit_df$UID)
+write.csv(uid_suit_df, file.path(grid_dir, "unique_ids_suitable_xy.csv"), row.names = FALSE)
 
 # Calculate wetland averages
 message_ts("Calculating wetland values...")
