@@ -130,7 +130,7 @@ trim_faster <- function(x, out = "raster"){
   if(!require(terra)) stop(add_ts("Package 'terra' is required"))
   
   # Check inputs
-  if(!(class(x) %in% c("RasterLayer", "matrix"))) stop("Input must be a raster or matrix")
+  if(!(class(x) %in% c("SpatRaster", "matrix"))) stop("Input must be a raster or matrix")
   if(!(out %in% c("raster", "matrix"))) stop("Output must be a raster or matrix")
   if(class(x) == "matrix" & out == "raster") stop("if you supply a matrix, you must use out='matrix'")
   
@@ -141,7 +141,7 @@ trim_faster <- function(x, out = "raster"){
       crs <- projection(x)
       ref_rst <- x 
     }
-    x <- matrix(raster::as.array(x), nrow = nrow(x), ncol = ncol(x))
+    x <- matrix(terra::as.array(x), nrow = nrow(x), ncol = ncol(x))
   }
   
   # Check rows and columns for NAs
