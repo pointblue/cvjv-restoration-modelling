@@ -17,7 +17,7 @@ sapply(c(def_file, code_files), FUN = function(x) source(x))
 # Check directories, creating if missing
 check_dir(c(log_dir, cell_dir, anl_dir, wxl_dir, fcl_dir, prd_dir, stat_dir, cell_stat_dir), create = TRUE)
 
-# Specify the (monthly) long term average water files to process
+# Specify the (monthly) long term average water file(s) to process
 water_files <- file.path(wtr_dir, "valley_average_Apr_2011-2021_snapped.tif")
 
 # Select uids
@@ -30,7 +30,7 @@ uids <- uids_ag[1:1000]
 
 # Set number of processes
 # Caps at number of cores - 1
-cores_to_use <- 16 #for tsinfo3
+cores_to_use <- 12 #for tsinfo3
 n_sessions <- min(length(uids), cores_to_use, availableCores() - 1)
 plan(multisession, workers = n_sessions)
 
@@ -48,7 +48,7 @@ for (n in 1:n_sessions) {
 	
 	f[[n]] <- future({
 		
-	  # Write to log
+	  # Message
 	  pid <- Sys.getpid()
 	  timestr <- format(Sys.time(), format = "%Y-%m-%d_%H%M")
 	  #log_file <- file.path(log_dir, paste0("log_", timestr, "_", pid, ".txt"))
@@ -108,9 +108,6 @@ f
 
 # Shows the values
 value(f)
-
-#area_5k_files <- file.path(cell_dir, paste0("cell_", uids, "_buffered5k.tif"))
-#prd_files <- list.files(prd_dir, pattern = ".tif$", full.names = TRUE)
 
 # Read and combine all stats
 message_ts("Reading and combining data...")
