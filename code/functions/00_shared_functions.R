@@ -310,7 +310,7 @@ buffer_simple.SpatRaster <- function(rst, width = 1, buffer_value = 1) {
   mat_buf <- buffer_simple(mat, width = width, buffer_value = buffer_value)
   
   # Convert back to raster
-  rst_buf <- raster(mat_buf, template = rst)
+  rst_buf <- rast(mat_buf, template = rst)
   
   return(rst_buf)
   
