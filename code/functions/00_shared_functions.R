@@ -82,52 +82,6 @@ clean_string_remove_underscores <- function(x, sub_char = "-", ...) {
 # Function to split a vector into n chunks of equal size
 chunk <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE)) 
 
-# Function to more quickly trim rasters
-# raster::trim is ridiculously slow
-trim_faster <- function(x, out = "raster"){
-  
-  if(!require(raster)) stop(add_ts("Package 'raster' is required"))
-  
-  # Check inputs
-  if(!(class(x) %in% c("RasterLayer", "matrix"))) stop("Input must be a raster or matrix")
-  if(!(out %in% c("raster", "matrix"))) stop("Output must be a raster or matrix")
-  if(class(x) == "matrix" & out == "raster") stop("if you supply a matrix, you must use out='matrix'")
-  
-  # Convert to matrix
-  if(class(x) == "RasterLayer") {
-    if(out == "raster") { 
-      cres <- 0.5 * res(x)
-      crs <- projection(x)
-      ref_rst <- x 
-    }
-    x <- matrix(raster::as.array(x), nrow = nrow(x), ncol = ncol(x))
-  }
-  
-  # Check rows and columns for NAs
-  na_rows <- apply(x, MARGIN = 1, FUN = function(x) { all(is.na(x)) })
-  na_cols <- apply(x, MARGIN = 2, FUN = function(x) { all(is.na(x)) })
-  
-  # Find first/last non-NA rows and columns
-  r1 <- min(which(!na_rows))
-  r2 <- max(which(!na_rows))
-  c1 <- min(which(!na_cols))
-  c2 <- max(which(!na_cols))
-  
-  # Subset matrix
-  x <- x[r1:r2,c1:c2]
-  
-  # Reformat as raster
-  if (out == "raster") {
-    xs <- xFromCol(ref_rst, col = c(c1, c2)) + c(-1, 1) * cres[1]
-    ys <- yFromRow(ref_rst, row = c(r2, r1)) + c(-1, 1) * cres[2]
-    x <- raster(x, xmn = xs[1], xmx = xs[2], ymn = ys[1], ymx = ys[2], crs = crs)
-  }
-  
-  return(x)
-  
-}
-
-
 # Function to parse the filenames of project files
 parse_filename <- function(files) {
   
@@ -167,6 +121,53 @@ parse_filename <- function(files) {
   return(file_df)
   
 }
+
+
+# Function to more quickly trim rasters
+# raster::trim is very slow
+trim_faster <- function(x, out = "raster"){
+  
+  if(!require(terra)) stop(add_ts("Package 'terra' is required"))
+  
+  # Check inputs
+  if(!(class(x) %in% c("RasterLayer", "matrix"))) stop("Input must be a raster or matrix")
+  if(!(out %in% c("raster", "matrix"))) stop("Output must be a raster or matrix")
+  if(class(x) == "matrix" & out == "raster") stop("if you supply a matrix, you must use out='matrix'")
+  
+  # Convert to matrix
+  if(class(x) == "RasterLayer") {
+    if(out == "raster") { 
+      cres <- 0.5 * res(x)
+      crs <- projection(x)
+      ref_rst <- x 
+    }
+    x <- matrix(raster::as.array(x), nrow = nrow(x), ncol = ncol(x))
+  }
+  
+  # Check rows and columns for NAs
+  na_rows <- apply(x, MARGIN = 1, FUN = function(x) { all(is.na(x)) })
+  na_cols <- apply(x, MARGIN = 2, FUN = function(x) { all(is.na(x)) })
+  
+  # Find first/last non-NA rows and columns
+  r1 <- min(which(!na_rows))
+  r2 <- max(which(!na_rows))
+  c1 <- min(which(!na_cols))
+  c2 <- max(which(!na_cols))
+  
+  # Subset matrix
+  x <- x[r1:r2, c1:c2]
+  
+  # Reformat as raster
+  if (out == "raster") {
+    xs <- xFromCol(ref_rst, col = c(c1, c2)) + c(-1, 1) * cres[1]
+    ys <- yFromRow(ref_rst, row = c(r2, r1)) + c(-1, 1) * cres[2]
+    x <- rast(x, xmn = xs[1], xmx = xs[2], ymn = ys[1], ymx = ys[2], crs = crs)
+  }
+  
+  return(x)
+  
+}
+
 
 # Different rectangular buffer method
 # Buff dist in map units (usually m)
