@@ -1,0 +1,23 @@
+
+# Cell grids
+cell_CELLNUM_bufferedDIST.tif
+cell_124_buffered5k.tif
+
+# Water x landcover
+cell_CELLNUM_WATERTIME_water_x_HABITAT.tif
+cell_30786_2011-2021_Apr_water_x_WetlandTreated.tif
+
+# Focal
+cell_124_2011-2021_Apr_water_x_AlternatingCrop_5000m.tif
+cell_CELLNUM_WATERTIME_water_x_HABITAT_DISTANCE.tif
+
+# Stack
+cell_CELLNUM_WATERTIME_stack.tif
+
+# Prediction
+cell_CELLNUM_WATERTIME_SPECIES_MODELLOCATION_MODELTYPE.tif
+cell_24483_Apr_2011-2021_AMAV_S_longterm.tif
+
+# Stats
+cell_CELLNUM_summary.rds
+cell_34259_summary.rds
