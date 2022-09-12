@@ -1,15 +1,28 @@
 # Code to combine all bird prediction stats into a single file and do preliminary analysis
 #
 
+# Load definitions and code
+code_dir <- "V:/Project/wetland/FWSPartners/code/cvjv-restoration-modelling/code"
+def_file <- file.path(code_dir, "definitions.R")
+code_files <- list.files(file.path(code_dir, "functions"), pattern = ".*R$", full.names = TRUE)
+sapply(c(def_file, code_files), FUN = function(x) source(x))
+
 # Packages
 library(dplyr)
 library(ggplot2)
 
 # Read data
 message_ts("Reading and combining data...")
-message_ts("Reading and combining data...")
 stat_files <- list.files(cell_stat_dir, pattern = "summary.rds$", full.names = TRUE)
-long_df <- do.call(rbind, lapply(stat_files, function(x) readRDS(x)))
+long_raw_df <- do.call(rbind, lapply(stat_files, function(x) readRDS(x)))
+
+# Link xy coordinates
+xy_df <- read.csv(file.path(grid_dir, "unique_ids_suitable_xy.csv"))
+long_df <- xy_df %>%
+  mutate(UID = as.character(UID)) %>%
+  inner_join(long_raw_df, by = c("UID" = "Cell")) %>%
+  select(!Count & !Plurality) %>%
+  rename("CurrentLandcover" = "Landcover", "LandcoverPercent" = "Percentage")
 
 # Export
 saveRDS(long_df, file.path(stat_dir, "cell_summary_long.rds"))
