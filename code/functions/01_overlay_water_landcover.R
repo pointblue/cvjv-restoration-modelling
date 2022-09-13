@@ -6,11 +6,10 @@
 # Use of buffer_dist is recommended to speed processing; set as 2x your largest moving window
 # Returns a vector of created files
 
-overlay_water_landcover <- function(water_files, landcover_files, uid_raster, uids = NULL,
-                                    uid_lkp_file = NULL,
+overlay_water_landcover <- function(water_files, landcover_files, 
+                                    uid_raster, uids = NULL, uid_lkp_file = NULL,
                                     imposed_water_value = NULL, imposed_landcover = "WetlandNatural",
-                                    cell_dir, 
-                                    output_dir, overwrite = FALSE) { #buffer_dist?
+                                    cell_dir, output_dir, overwrite = FALSE) { #buffer_dist?
 
   # Load required packages
   if (!require(terra)) stop(add_ts("Library terra is required"))

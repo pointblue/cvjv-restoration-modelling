@@ -3,7 +3,8 @@
  
 # Returns character vector of created files
 extract_predictions <- function(prediction_files, area_files,
-                                output_dir, n_predictions = NULL, overwrite = FALSE) {
+                                output_dir, 
+                                n_predictions = NULL, overwrite = FALSE) {
   
   # Load required packages
   if (!require(terra)) stop(add_ts("Library terra is required"))
