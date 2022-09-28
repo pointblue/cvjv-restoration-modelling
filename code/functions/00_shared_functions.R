@@ -174,7 +174,7 @@ trim_faster <- function(x, out = "raster"){
 buffer_rect <- function(in_rst, buffer_dist, match_value = 1, fill_value = 0, out_file = NULL, overwrite = FALSE) {
   
   # Load required packages
-  if (!require(terra)) stop(add_ts("Library terra is required"))
+  if (!require(terra)) stop(add_ts("Package terra is required"))
   
   # Check simple parameters
   if (!is.logical(overwrite)) stop(add_ts("Argument 'overwrite' must be TRUE or FALSE"))
