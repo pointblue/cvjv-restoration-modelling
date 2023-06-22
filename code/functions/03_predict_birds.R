@@ -235,7 +235,6 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   				}, error = function(e) {
   				  
   				  message_ts("Error when predicting: ", e)
-  				  message_ts("Moving to next...")
   				  
   				  error_counter <<- error_counter + 1
   				  
