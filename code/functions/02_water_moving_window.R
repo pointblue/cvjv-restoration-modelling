@@ -4,7 +4,8 @@
 # Takes water (by landcover) files and distances as input
 # Distance is in meters
 # Returns a vector of created files
-mean_neighborhood_water <- function(water_files, distances, output_dir, trim_extent = FALSE, overwrite = FALSE) {
+mean_neighborhood_water <- function(water_files, distances, output_dir, 
+                                    trim_extent = FALSE, overwrite = FALSE) {
   
   # Load required packages
   if (!require(terra)) stop(add_ts("Library terra is required"))
