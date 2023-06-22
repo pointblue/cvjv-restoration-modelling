@@ -23,8 +23,11 @@ ref_file <- file.path(wtr_dir, "valley_average_Apr_2011-2021_snapped.tif")
 # Analysis
 anl_dir <- file.path(base_dir, "analysis")
 
+log_dir <- file.path(anl_dir, "logs")
+
 grid_dir <- file.path(anl_dir, "grid")
 cell_dir <- file.path(grid_dir, "cells")
+imp_dir <- file.path(grid_dir, "cells_imposed")
 
 wxl_dir <- file.path(anl_dir, "water_x_landcover")
 fcl_dir <- file.path(anl_dir, "water_focal")
@@ -42,6 +45,14 @@ lc_defs <- list("Unsuitable" = 0, "GrassPasture" = 1, "Corn" = 3,
                 "AlternatingCrop" = 99)
 model_lcs <- c("Rice", "Corn", "GrainPlus", "AlternatingCrop", "NonRiceCrop", "WetlandNatural", "WetlandTreated")
 model_lc_files <- file.path(lc_dir, paste0(model_lcs, "_2014-2021.tif"))
+
+landcovers <- c("Rice", "Corn", "Grain", "NonRiceCrops", "TreatedWetland", "Wetland_SemiSeas", "AltCrop")
+lc_files <- file.path(lc_dir, paste0(landcovers, "_valley.tif"))
+#if (!all(file.exists(lc_files))) { stop(add_ts("Missing landcover files."))}
+
+# Longterm focal water x landcover files (create with create_focal_water_longterm)
+lt_fcl_dir <- "V:/Project/wetland/NASA_water/CVJV_misc_pred_layer/ForecastingTNC/code/water_tracker/data/longterm_averages/water_focal"
+lt_fcl_files <- list.files(lt_fcl_dir, pattern = ".tif$", full.names = TRUE)
 
 # Basins
 basins <- c("American", "Butte", "Colusa", "Delta", "San Joaquin", "Suisun", "Sutter", "Tulare", "Yolo")
