@@ -5,7 +5,7 @@
 # Shared Functions --------------------
 
 # Basic logging function to add a timestamp to strings
-add_ts <- function(...) paste0("[", Sys.time(), "] - ", ...)
+add_ts <- function(...) paste0("{", Sys.getpid(), "} [", Sys.time(), "] - ", ...)
 
 # Add as wrapper for base 'message' function
 message_ts <- function(...) message(add_ts(...))
@@ -79,8 +79,14 @@ clean_string_remove_underscores <- function(x, sub_char = "-", ...) {
   return(y)
 }
 
+# Function to get extension of filename
+file_ext <- function(x) {
+  x_split <- strsplit(basename(x), ".", fixed = TRUE)
+  ext <- x_split[[1]][length(x_split[[1]])]
+}
+
 # Function to split a vector into n chunks of equal size
-chunk <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE)) 
+chunk <- function(x, n) split(x, cut(seq_along(x), n, labels = FALSE)) 
 
 # Function to parse the filenames of project files
 parse_filename <- function(files) {
@@ -221,6 +227,7 @@ buffer_rect <- function(in_rst, buffer_dist, match_value = 1, fill_value = 0, ou
   y_dist <- round(buffer_dist / yres) * yres
   
   # Get coordinates
+  message_ts("Getting bounding map coordinates...")
   match_cells <- unlist(cells(match_rst, match_value))
   match_xys <- xyFromCell(match_rst, match_cells)
   
@@ -243,6 +250,36 @@ buffer_rect <- function(in_rst, buffer_dist, match_value = 1, fill_value = 0, ou
   
   message_ts("Complete")
   return(combined_rst)
+  
+}
+
+
+# Function to setup cluster for parallel processing (on windows; linux can use easier mclapply)
+setup_cluster <- function(ncores = detectCores(), verbose = FALSE, outfile = "") {
+  
+  ncores <- min(ncores, detectCores())
+  cl <- makeCluster(ncores, outfile = outfile)
+  
+  # Get loaded packages
+  pkgs <- names(sessionInfo()$otherPkgs)
+  
+  # Export available variables in current env, parent env(s), and global env
+  this_env <- environment()
+  while(!identical(this_env, .GlobalEnv)) {
+    clusterExport(cl, ls(this_env), this_env)
+    this_env <- parent.env(environment())
+  }
+  clusterExport(cl, ls(.GlobalEnv), .GlobalEnv)
+  
+  # Load packages
+  clusterEvalQ(cl, lapply(pkgs, FUN = library, character.only = TRUE, quietly = TRUE))
+  
+  if (verbose == TRUE) {
+    print(clusterEvalQ(cl, ls()))
+    print(clusterEvalQ(cl, names(sessionInfo()$OtherPkgs))) #maybe doesn't work?
+  }
+  
+  return(cl)
   
 }
 
