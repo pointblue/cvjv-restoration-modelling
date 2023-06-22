@@ -201,6 +201,8 @@ mth_df <- mth_yr_df %>%
   group_by(BasinName, ClassName, Month) %>%
   summarize(AvgWater = weighted.mean(MonthAvgWater, MonthAvgObs, na.rm = TRUE))
 
+write.csv(mth_df, file.path(data_dir, "stats_basin_wetlands_longterm.csv"), row.names = FALSE)
+
 # Link basin and water
 uid_bsn_file <- file.path(grid_dir, "uid_basin_lookup.rds")
 if (!file.exists(uid_bsn_file)) {
