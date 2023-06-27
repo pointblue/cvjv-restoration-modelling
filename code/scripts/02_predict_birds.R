@@ -54,7 +54,7 @@ uids_split <- chunk(sample(uids_subset), n_splits)
 
 # Set number of processes
 # Caps at number of cores - 1
-cores_to_use <- 12
+cores_to_use <- 2
 n_sessions <- min(length(uids_subset), cores_to_use, availableCores() - 1)
 
 handlers(global = TRUE)
@@ -80,14 +80,14 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
   }
   
   if (verbose_level > 1) {
-    msg_prg <- TRUE
-    msg_fxn <- TRUE
+    show_msg_prg <- TRUE
+    show_msg_fxn <- TRUE
   } else if (verbose_level == 1) {
-    msg_prg <- TRUE
-    msg_fxn <- FALSE
+    show_msg_prg <- TRUE
+    show_msg_fxn <- FALSE
   } else {
-    msg_prg <- FALSE
-    msg_fxn <- FALSE
+    show_msg_prg <- FALSE
+    show_msg_fxn <- FALSE
   }
   
   if (retry_counter > 0) p(add_ts("Retry count: ", retry_counter), class = "sticky", amount = 0)
@@ -105,7 +105,7 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
       lbl <- paste0("Subset ", uid_set, " of ", uid_list_len, " (", uids[1], ") - ")
       prg_mult <- 1
     }
-    if (msg_prg) p(add_ts(lbl, "started"), class = "sticky", amount = 0)
+    if (show_msg_prg) p(add_ts(lbl, "started"), class = "sticky", amount = 0)
     
     # Streamlined error catching
     tryCatch({
@@ -118,11 +118,11 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
                                    fill_labels = NA,
                                    output_dir = cell_dir, 
                                    overwrite = overwrite,
-                                   verbose = msg_fxn)
+                                   verbose = show_msg_fxn)
       
-      if (msg_prg) p(add_ts("Buffered uid_files (", length(uid_files), "): ", paste0(basename(uid_files), collapse = ", ")), 
+      if (show_msg_prg) p(add_ts("Buffered uid_files (", length(uid_files), "): ", paste0(basename(uid_files), collapse = ", ")), 
                      class = "sticky", amount = 0)
-      #if (msg_prg) p(add_ts("Buffering complete. Imposing water..."), class = "sticky", amount = 0)
+      #if (show_msg_prg) p(add_ts("Buffering complete. Imposing water..."), class = "sticky", amount = 0)
       p(amount = 0.05 * prg_mult * global_prog_mult)
     
       # Lookup imposed flooding and impose to cell
@@ -140,22 +140,38 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
                                        value_adjustment = "coverage", 
                                        output_dir = imp_dir, 
                                        overwrite = overwrite,
-                                       verbose = msg_fxn)
+                                       verbose = show_msg_fxn)
 
-      if (msg_prg) p(add_ts("imp_files (", length(imp_files), "): ", paste0(basename(imp_files), collapse = ", ")), 
+      if (show_msg_prg) p(add_ts("imp_files (", length(imp_files), "): ", paste0(basename(imp_files), collapse = ", ")), 
                      class = "sticky", amount = 0)
-      #if (msg_prg) p(add_ts("Water imposed"), class = "sticky", amount = 0)
+      #if (show_msg_prg) p(add_ts("Water imposed"), class = "sticky", amount = 0)
       p(amount = 0.15 * prg_mult * global_prog_mult)
   
-      imp_files <- imp_files[!grepl("-Feb.tif", imp_files)]
+      #imp_files <- imp_files[grepl("-Feb.tif", imp_files)]
       
       # Overlay imposed water on pre-calculated valley-wide focal water
       fcl_imp_files <- overlay_imposed_on_neighborhood(imposed_files = imp_files, 
-                                                       focal_files = lt_fcl_files[!grepl("_Feb_", lt_fcl_files)], 
+                                                       focal_files = lt_fcl_files, #[grepl("_Feb_", lt_fcl_files)], 
                                                        output_dir = fcl_dir, 
                                                        focal_filter = "valley_2013-2022",
                                                        overwrite = overwrite,
-                                                       verbose = msg_fxn)
+                                                       verbose = show_msg_fxn)
+      
+      # Create predictions
+      prd_files <- predict_birds(water_files_longterm = fcl_imp_files,                  
+                                 scenarios = "valley_2013-2022",
+                                 water_months = month.abb[1:12], #c("Apr"),
+                                 model_files = shorebird_model_files_long, 
+                                 model_names = shorebird_model_names_long, 
+                                 static_cov_files = bird_model_cov_files, 
+                                 static_cov_names = bird_model_cov_names,
+                                 monthly_cov_files = tmax_files,
+                                 monthly_cov_months = tmax_months,
+                                 monthly_cov_names = tmax_names,
+                                 output_dir = prd_dir,
+                                 verbose = show_msg_fxn,
+                                 on_error_rerun = FALSE)
+      
       
       }, error = function(e) {
         if (retry_counter == 0) {
@@ -193,7 +209,7 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
       }
     )
     
-    if (msg_prg) p(add_ts(lbl, " Processing complete."), class = "sticky", amount = 0)
+    if (show_msg_prg) p(add_ts(lbl, " Processing complete."), class = "sticky", amount = 0)
     p(amount = 0.8 * prg_mult * global_prog_mult)
     
   }
