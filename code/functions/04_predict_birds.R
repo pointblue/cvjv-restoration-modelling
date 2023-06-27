@@ -2,12 +2,13 @@
 
 # Predict bird rasters using the longterm model
 # Returns character vector of processed files
-predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
+predict_birdss <- function(water_files_longterm, scenarios, water_months,
                                  model_files, model_names, 
                                  static_cov_files, static_cov_names, 
                                  monthly_cov_files, monthly_cov_months, monthly_cov_names,
                                  output_dir, overwrite = FALSE,
                                  on_missing_landcover = "stop",
+                                 verbose = TRUE,
                                  on_error_rerun = FALSE) {
 	
   # Load required packages
@@ -80,7 +81,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
 	# Loop across flooding areas
 	for (fa in flood_areas) {
 
-		message_ts("Working on area ", fa)
+		if (verbose) message_ts("Working on area ", fa)
 	  fac <- clean_string(fa)
 		
 		# Files for this flooding area
@@ -89,20 +90,20 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
 		# Loop across unique scenarios
 		for (scn in scenarios) {
 			
-			message_ts("Working on scenario ", scn)
+			if (verbose) message_ts("Working on scenario ", scn)
 		  scn_files <- fa_files[grepl(scn, fa_files)]
 		  if (length(scn_files) == 0) {
-		    message_ts("WARNING: no files found matching scenario ", scn, " for flood area ", fa, ". Moving to next...")
+		    if (verbose) message_ts("WARNING: no files found matching scenario ", scn, " for flood area ", fa, ". Moving to next...")
 		    next
 		  }
 		  
 		  # Loop across months
   		for (mth in water_months) {
   		  
-  		  message_ts("Working on month ", mth)
+  		  if (verbose) message_ts("Working on month ", mth)
   		  mth_files <- scn_files[grepl(mth, scn_files)]
   		  if (length(mth_files) == 0) {
-  		    message_ts("WARNING: no files found matching month ", mth, " for flood area ", fa, " and scenario ", scn, ". Moving to next...")
+  		    if (verbose) message_ts("WARNING: no files found matching month ", mth, " for flood area ", fa, " and scenario ", scn, ". Moving to next...")
   		    next
   		  }
   		  
@@ -113,13 +114,13 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
 			  # Append to output
   			processed_files <- c(processed_files, prd_files)
 			
-  		    message_ts("All bird predictions have been created for this scenario. Moving to next...")
+  		    if (verbose) message_ts("All bird predictions have been created for this scenario. Moving to next...")
   		    next
   		    
   		  }
   		  
   		  # LONGTERM WATER (average)
-  		  message_ts("Checking and loading long-term water x landcover moving window files...")
+  		  if (verbose) message_ts("Checking and loading long-term water x landcover moving window files...")
 
   		  # Check files
   		  landcover_lt_df$File <- mapply(nm = landcover_lt_df$NameLandcover, dst = landcover_lt_df$Distance, 
@@ -143,7 +144,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   		                  paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
   		                  "\n\nHalting execultion."))
   		    } else {
-  		      message_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
+  		      if (verbose) message_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
   		                 ", scenario ", scn, ", and month ", mth, ":\n\t",
   		                 paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
   		                 "\n\nMoving to next...")
@@ -157,7 +158,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   		  names(wtr_lt_stk) <- landcover_lt_df$NameModel
   		  
   			# Load basic covariates
-  			message_ts("Loading model covariates...")
+  			if (verbose) message_ts("Loading model covariates...")
   			#static_cov_stk <- stack(static_cov_files) #already loaded
   			#names(static_cov_stk) <- static_cov_names
   			
@@ -175,16 +176,16 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   			names(mth_cov_stk) <- monthly_cov_names[mth_match]
     		
   			# Crop stacks to field area
-  			message_ts("Cropping covariate stacks to field...")
+  			if (verbose) message_ts("Cropping covariate stacks to field...")
   			#print(extent(static_cov_stk))
   			#print(extent(mth_cov_stk))
   			#print(extent(wtr_lt_stk))
   			if (identical(extent(static_cov_stk), extent(mth_cov_stk))) {
-  			  message_ts("As stack...")
+  			  if (verbose) message_ts("As stack...")
   			  cov_stk <- stack(static_cov_stk, mth_cov_stk)
   			  cov_stk <- crop(cov_stk, wtr_lt_stk)
   			} else {
-  			  message_ts("Individually...")
+  			  if (verbose) message_ts("Individually...")
   			  static_cov_stk <- crop(static_cov_stk, wtr_lt_stk)
   			  mth_cov_stk <- crop(mth_cov_stk, wtr_lt_stk)
   			  cov_stk <- stack(static_cov_stk, mth_cov_stk)
@@ -202,14 +203,14 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   			  mdl_file <- model_files[mn]
   			  mdl_name <- model_names[mn]
   				
-  				message_ts("Working on bird model ", mdl_name)
+  				if (verbose) message_ts("Working on bird model ", mdl_name)
   				
   				prd_file <- file.path(output_dir, paste0(fac, "_", mth, "_", scn, "_", mdl_name, ".tif"))
   				
   				# Check if predicted
   				if (file.exists(prd_file) & overwrite != TRUE) {
   					
-  					message_ts("Surface already predicted and overwrite != TRUE.  Moving to next...")
+  					if (verbose) message_ts("Surface already predicted and overwrite != TRUE.  Moving to next...")
   				  next
   				
   				} 
@@ -218,8 +219,8 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   				mdl <- readRDS(mdl_file)
   				
   				# Predict
-  				message_ts("Predicting surface...")
-  				message_ts("Output file: ", prd_file)
+  				if (verbose) message_ts("Predicting surface...")
+  				if (verbose) message_ts("Output file: ", prd_file)
   				
   				tryCatch({
     				# Must define factors when predicting
@@ -227,14 +228,14 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
     				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
     				                   filename = prd_file, overwrite = TRUE)
     				print(summary(prd_rst))
-    				message_ts("Complete.")
+    				if (verbose) message_ts("Complete.")
   				
     				# Append to output
     				processed_files <- c(processed_files, prd_file)
     				
   				}, error = function(e) {
   				  
-  				  message_ts("Error when predicting: ", e)
+  				  if (verbose) message_ts("Error when predicting: ", e)
   				  
   				  error_counter <<- error_counter + 1
   				  
@@ -245,7 +246,7 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
   				  
   				  if (on_error_rerun == TRUE) {
   				    
-  				    message_ts("Multiple errors encountered with cell ", fac, ". Attempting to reprocess input layers...")
+  				    if (verbose) message_ts("Multiple errors encountered with cell ", fac, ". Attempting to reprocess input layers...")
   				    
   				    # TODO: Contains parameters not passed via function call
   				    
@@ -290,14 +291,14 @@ predict_bird_rasters <- function(water_files_longterm, scenarios, water_months,
     				    
   				    }, error = function(e) {
   				      
-  				      message_ts("Error when attempting to reprocess files for area ", fac, ": ", e)
-  				      message_ts("Will need to be fixed manually. Moving to next...")
+  				      if (verbose) message_ts("Error when attempting to reprocess files for area ", fac, ": ", e)
+  				      if (verbose) message_ts("Will need to be fixed manually. Moving to next...")
   				      
   				    })
     				    
   				  } else {
   				    
-  				    message_ts("Multiple errors encountered with cell ", fac, ". Skipping to next cell...")
+  				    if (verbose) message_ts("Multiple errors encountered with cell ", fac, ". Skipping to next cell...")
   				    break 
   				   
   				  }
