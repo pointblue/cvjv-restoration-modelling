@@ -63,7 +63,21 @@ handlers(handler_progress(
   clear = FALSE))
 
 # Execute the code in n splits
-evaluate_cells <- function(uid_list, retry = FALSE, verbose_level = 1, p = NULL, global_prog_mult = 1) {
+evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_counter = NULL,
+                           verbose_level = 1, p = NULL, global_prog_mult = 1) {
+  
+  
+  uid_list_len <- length(uid_list)
+  uid_sublist_len <- mean(unlist(lapply(uid_list, length)))
+  
+  if (is.null(p)) p <- progressor(steps = uid_list_len * uid_sublist_len, auto_finish = FALSE)
+  
+  if (retry_times > 2) stop(add_ts("Only supports two levels of retry upon error."))
+  if (is.null(retry_counter)) { 
+    retry_counter <- 0
+  } else {
+    retry_counter <- retry_counter + 1
+  }
   
   if (verbose_level > 1) {
     msg_prg <- TRUE
@@ -76,10 +90,8 @@ evaluate_cells <- function(uid_list, retry = FALSE, verbose_level = 1, p = NULL,
     msg_fxn <- FALSE
   }
   
-  uid_list_len <- length(uid_list)
-  uid_sublist_len <- mean(unlist(lapply(uid_list, length)))
+  if (retry_counter > 0) p(add_ts("Retry count: ", retry_counter), class = "sticky", amount = 0)
   
-  if (is.null(p)) p <- progressor(steps = uid_list_len * uid_sublist_len, auto_finish = FALSE)
   foreach(uids = uid_list) %dofuture% {
   #future_lapply(uid_list, function(uids, ...) {
     
@@ -87,36 +99,35 @@ evaluate_cells <- function(uid_list, retry = FALSE, verbose_level = 1, p = NULL,
     uid_set <- which(unname(unlist(lapply(uid_list, function(x) identical(x, uids)))))
     uid_set_len <- length(uids)
     if (uid_set_len > 1) {
-      lbl <- paste0("UID set ", uid_set, " (start=", uids[1], ", n=", uid_set_len, ") - ")
-      prg_mult <- uid_set_len * global_prog_mult
+      lbl <- paste0("Set ", uid_set, " of ", uid_list_len, " (start=", uids[1], ", n=", uid_set_len, ") - ")
+      prg_mult <- uid_set_len
     } else {
-      lbl <- paste0("UID subset ", uid_set, " - ")
-      prg_mult <- 1 * global_prog_mult
+      lbl <- paste0("Subset ", uid_set, " of ", uid_list_len, " (", uids[1], ") - ")
+      prg_mult <- 1
     }
-    if (msg_prg) p(add_ts(lbl, "started (out of ", uid_list_len, ")"), class = "sticky", amount = 0)
+    if (msg_prg) p(add_ts(lbl, "started"), class = "sticky", amount = 0)
     
-    # Buffer uids
-    uid_files <- tryCatch({
-                    buffer_uid_grid(uid_raster = file.path(grid_dir, "unique_ids_masked.tif"), 
+    # Streamlined error catching
+    tryCatch({
+    
+      # Buffer uids
+      uid_files <- buffer_uid_grid(uid_raster = file.path(grid_dir, "unique_ids_masked.tif"), 
                                    uids = uids, #[[n]], #uids_split[[1]][1:3]
                                    buffer_distances = c(250, 5000), 
                                    fill_values = c(0, 0), 
                                    fill_labels = NA,
                                    output_dir = cell_dir, 
-                                   overwrite = global_overwrite,
+                                   overwrite = overwrite,
                                    verbose = msg_fxn)
-      }, error = function(e) p(add_ts("ERROR - buffer_uid_grid() - ", e), class = "sticky", amount = 0)
-    )
+      
+      if (msg_prg) p(add_ts("Buffered uid_files (", length(uid_files), "): ", paste0(basename(uid_files), collapse = ", ")), 
+                     class = "sticky", amount = 0)
+      #if (msg_prg) p(add_ts("Buffering complete. Imposing water..."), class = "sticky", amount = 0)
+      p(amount = 0.05 * prg_mult * global_prog_mult)
     
-    if (msg_prg) p(add_ts("Buffered uid_files (", length(uid_files), "): ", paste0(basename(uid_files), collapse = ", ")), 
-                   class = "sticky", amount = 0)
-    #if (msg_prg) p(add_ts("Buffering complete. Imposing water..."), class = "sticky", amount = 0)
-    p(amount = 0.1 * prg_mult)
-    
-    # Lookup imposed flooding and impose to cell
-    cells <- extract_subelement(strsplit(uid_files, "_"), 2)
-    imp_files <- tryCatch({
-                  impose_water_lookup(uid_files = uid_files, 
+      # Lookup imposed flooding and impose to cell
+      cells <- extract_subelement(strsplit(uid_files, "_"), 2)
+      imp_files <- impose_water_lookup(uid_files = uid_files, 
                                        lookup_file = file.path(grid_dir, "uid_full_lookup.rds"), 
                                        match_strings = cells, 
                                        match_col = "UID",
@@ -128,63 +139,77 @@ evaluate_cells <- function(uid_list, retry = FALSE, verbose_level = 1, p = NULL,
                                        class_label = "semiperm", 
                                        value_adjustment = "coverage", 
                                        output_dir = imp_dir, 
-                                       overwrite = global_overwrite,
+                                       overwrite = overwrite,
                                        verbose = msg_fxn)
-      }, error = function(e) {
-          p(add_ts("ERROR - impose_water_lookup() -", e), class = "sticky", amount = 0)
-          saveRDS(e, file.path(log_dir, paste0("_ERROR_function-impose-water-lookup_UIDset-", uid_set, 
-                                             "UIDs-", paste0(uids, collapse = "-"), ".rds")))
-          if (retry) {
-            p(add_ts("Retrying UIDs in this set individually..."), class = "sticky", amount = 0)
-            evaluate_cells(unlist(uids), retry = FALSE, p = p, global_prog_mult = 0)
-          }
-      }
-    )
-    
-    if (msg_prg) p(add_ts("imp_files (", length(imp_files), "): ", paste0(basename(imp_files), collapse = ", ")), 
-                   class = "sticky", amount = 0)
-    #if (msg_prg) p(add_ts("Water imposed"), class = "sticky", amount = 0)
-    p(amount = 0.2 * prg_mult)
 
-    imp_files <- imp_files[grepl("-Mar.tif", imp_files)]
-    
-    # Overlay imposed water on pre-calculated valley-wide focal water
-    fcl_imp_files <- tryCatch({
-                      overlay_imposed_on_neighborhood(imposed_files = imp_files, 
-                                                       focal_files = lt_fcl_files[grepl("_Mar_", lt_fcl_files)], 
+      if (msg_prg) p(add_ts("imp_files (", length(imp_files), "): ", paste0(basename(imp_files), collapse = ", ")), 
+                     class = "sticky", amount = 0)
+      #if (msg_prg) p(add_ts("Water imposed"), class = "sticky", amount = 0)
+      p(amount = 0.15 * prg_mult * global_prog_mult)
+  
+      imp_files <- imp_files[!grepl("-Feb.tif", imp_files)]
+      
+      # Overlay imposed water on pre-calculated valley-wide focal water
+      fcl_imp_files <- overlay_imposed_on_neighborhood(imposed_files = imp_files, 
+                                                       focal_files = lt_fcl_files[!grepl("_Feb_", lt_fcl_files)], 
                                                        output_dir = fcl_dir, 
                                                        focal_filter = "valley_2013-2022",
-                                                       overwrite = global_overwrite,
+                                                       overwrite = overwrite,
                                                        verbose = msg_fxn)
+      
       }, error = function(e) {
-        p(add_ts("ERROR - overlay_imposed_...() - ", e), class = "sticky", amount = 0)
-        saveRDS(e, file.path(log_dir, paste0("_ERROR_function-overlay-imposed-on-neighborhood_", 
-                                             "UIDs-", paste0(uids, collapse = "-"), ".rds")))
-        if (retry) {
-          p(add_ts("Retrying UIDs in this set individually..."), class = "sticky", amount = 0)#.3 * prg_mult * -1)
-          evaluate_cells(unlist(uids), retry = FALSE, p = p, global_prog_mult = 0)
+        if (retry_counter == 0) {
+          lbl <- ""
+        } else if (retry_counter == 1) {
+          lbl <- paste0("UID ", uids, " - ")
+        } else {
+          lbl <- paste0("UID ", uids, ", retry ", retry_counter, " - ")
         }
+        lbl <- ifelse(retry_counter > 0, paste0("UID ", uids, ", retry ", retry_counter, " - "), "")
+        p(add_ts("ERROR - ", lbl, e), class = "sticky", amount = 0)
+        
+        saveRDS(e, file.path(log_dir, paste0("ERROR_", "UID-", paste0(uids, collapse = "-"), 
+                                             "_retry-", retry_counter, "-of-", retry_times, 
+                                             "_date-", format(Sys.time(), format = "%Y-%m-%d"), ".rds")))
+        
+        # If retry request, loop across individual UIDs
+        if (retry_times >= 1 & retry_counter == 0) {
+          p(add_ts("Retrying UIDs in this set individually to find problematic UID(s)..."), 
+            class = "sticky", amount = 0)#.3 * prg_mult * -1)
+          evaluate_cells(unlist(uids), overwrite = overwrite, 
+                         retry_times = 2, retry_counter = retry_counter, 
+                         p = p, global_prog_mult = 0)
+        # If repeating a second time, set overwrite to TRUE
+        } else if (retry_times >= 1 & retry_counter == 1) {
+          p(add_ts("Retrying problematic UID with overwrite == TRUE..."), class = "sticky", amount = 0)#.3 * prg_mult * -1)
+          evaluate_cells(unlist(uids), overwrite = TRUE, 
+                         retry_times = 2, retry_counter = retry_counter, 
+                         p = p, global_prog_mult = 0)
+        # If failed on last attempt (including an attempt that is first & only), remove progress for it
+        } else {
+          p(amount = -1 * prg_mult)
+        }
+        
       }
     )
     
     if (msg_prg) p(add_ts(lbl, " Processing complete."), class = "sticky", amount = 0)
-    p(amount = 0.7 * prg_mult)
+    p(amount = 0.8 * prg_mult * global_prog_mult)
     
   }
     
 }
 
-
 # Run sequentially (testing)
 plan(sequential)
-evaluation <- evaluate_cells(uids_split[3], verbose_level = 1, retry = TRUE)
+evaluation <- evaluate_cells(uids_split[1], verbose_level = 1, retry_times = 1)
 
 
 
 
 # Run multisession
 plan(multisession, workers = n_sessions)
-evaluation <- evaluate_cells(uids_split, verbose = FALSE)
+evaluation <- evaluate_cells(uids_split, verbose_level = 1, retry_times = 2)
 
 
 
