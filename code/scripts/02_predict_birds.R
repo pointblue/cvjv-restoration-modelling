@@ -35,8 +35,8 @@ uids_grass <- uid_df$UID[uid_df$Landcover == "GrassPasture"]
 #uids <- uids_ag[1:1000]
 
 # Every 10th
-uids_subset <- uids_ag[seq(1, length(uids_ag), 10)] #starting at 1
-#uids_subset <- uids_ag[seq(5, length(uids_ag), 10)] #starting at 5
+#uids_subset <- uids_ag[seq(1, length(uids_ag), 10)] #starting at 1
+uids_subset <- uids_ag[seq(5, length(uids_ag), 10)] #starting at 5
 
 # Unprocessed
 #uid_files_processed <- list.files(imp_dir, pattern = ".tif$")
@@ -47,14 +47,14 @@ uids_subset <- uids_ag[seq(1, length(uids_ag), 10)] #starting at 1
 # Compromise between max speed (chunks = n_cores) and error resistance /
 #   getting some results quick (chunks = 1 per uid)
 chunk_size <- 10
-n_splits <- ceiling(length(uids_subset) / 10)
+n_splits <- ceiling(length(uids_subset) / chunk_size)
 
 # Randomize files to prevent a large bloc of unprocessed files from being assigned to the same chunk
 uids_split <- chunk(sample(uids_subset), n_splits)
 
 # Set number of processes
 # Caps at number of cores - 1
-cores_to_use <- 2
+cores_to_use <- 16
 n_sessions <- min(length(uids_subset), cores_to_use, availableCores() - 1)
 
 handlers(global = TRUE)
@@ -96,6 +96,7 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
   #future_lapply(uid_list, function(uids, ...) {
     
     # Labels for messages
+    fxn <- "setup"
     uid_set <- which(unname(unlist(lapply(uid_list, function(x) identical(x, uids)))))
     uid_set_len <- length(uids)
     if (uid_set_len > 1) {
@@ -111,6 +112,7 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
     tryCatch({
     
       # Buffer uids
+      fxn <- "buffer-uid"
       uid_files <- buffer_uid_grid(uid_raster = file.path(grid_dir, "unique_ids_masked.tif"), 
                                    uids = uids, #[[n]], #uids_split[[1]][1:3]
                                    buffer_distances = c(250, 5000), 
@@ -127,6 +129,7 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
     
       # Lookup imposed flooding and impose to cell
       cells <- extract_subelement(strsplit(uid_files, "_"), 2)
+      fxn <- "impose-water-lookup"
       imp_files <- impose_water_lookup(uid_files = uid_files, 
                                        lookup_file = file.path(grid_dir, "uid_full_lookup.rds"), 
                                        match_strings = cells, 
@@ -150,28 +153,38 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
       #imp_files <- imp_files[grepl("-Feb.tif", imp_files)]
       
       # Overlay imposed water on pre-calculated valley-wide focal water
-      fcl_imp_files <- overlay_imposed_on_neighborhood(imposed_files = imp_files, 
-                                                       focal_files = lt_fcl_files, #[grepl("_Feb_", lt_fcl_files)], 
-                                                       output_dir = fcl_dir, 
+      fxn <- "overlay-imposed"
+      fcl_imp_files <- overlay_imposed_on_neighborhood(imposed_files = imp_files,
+                                                       focal_files = lt_fcl_files, #[grepl("_Feb_", lt_fcl_files)],
+                                                       output_dir = fcl_dir,
                                                        focal_filter = "valley_2013-2022",
                                                        overwrite = overwrite,
                                                        verbose = show_msg_fxn)
-      
+
+      if (show_msg_prg) p(add_ts("fcl_imp_files (", length(fcl_imp_files), "): ",
+                                 paste0(basename(fcl_imp_files), collapse = ", ")),
+                          class = "sticky", amount = 0)
+      p(amount = 0.2 * prg_mult * global_prog_mult)
+
       # Create predictions
-      prd_files <- predict_birds(water_files_longterm = fcl_imp_files,                  
-                                 scenarios = "valley_2013-2022",
+      fxn <- "predict-birds"
+      prd_files <- predict_birds(water_files_longterm = fcl_imp_files,
+                                 scenarios = "year-2013-2022",
                                  water_months = month.abb[1:12], #c("Apr"),
-                                 model_files = shorebird_model_files_long, 
-                                 model_names = shorebird_model_names_long, 
-                                 static_cov_files = bird_model_cov_files, 
+                                 model_files = shorebird_model_files_long,
+                                 model_names = shorebird_model_names_long,
+                                 static_cov_files = bird_model_cov_files,
                                  static_cov_names = bird_model_cov_names,
                                  monthly_cov_files = tmax_files,
                                  monthly_cov_months = tmax_months,
                                  monthly_cov_names = tmax_names,
                                  output_dir = prd_dir,
-                                 verbose = show_msg_fxn,
-                                 on_error_rerun = FALSE)
-      
+                                 overwrite = overwrite,
+                                 verbose = show_msg_fxn)
+
+      if (show_msg_prg) p(add_ts("prd_files (", length(prd_files), "): ", paste0(basename(prd_files), collapse = ", ")),
+                          class = "sticky", amount = 0)
+      p(amount = 0.6 * prg_mult * global_prog_mult)
       
       }, error = function(e) {
         if (retry_counter == 0) {
@@ -181,36 +194,35 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
         } else {
           lbl <- paste0("UID ", uids, ", retry ", retry_counter, " - ")
         }
-        lbl <- ifelse(retry_counter > 0, paste0("UID ", uids, ", retry ", retry_counter, " - "), "")
-        p(add_ts("ERROR - ", lbl, e), class = "sticky", amount = 0)
-        
-        saveRDS(e, file.path(log_dir, paste0("ERROR_", "UID-", paste0(uids, collapse = "-"), 
-                                             "_retry-", retry_counter, "-of-", retry_times, 
+
+        p(add_ts("ERROR - ", fxn, " - ", lbl, e), class = "sticky", amount = 0)
+
+        saveRDS(e, file.path(log_dir, paste0("error_function-", fxn, "_UID-", paste0(uids, collapse = "-"),
+                                             "_retry-", retry_counter, "-of-", retry_times,
                                              "_date-", format(Sys.time(), format = "%Y-%m-%d"), ".rds")))
-        
+
         # If retry request, loop across individual UIDs
         if (retry_times >= 1 & retry_counter == 0) {
-          p(add_ts("Retrying UIDs in this set individually to find problematic UID(s)..."), 
+          p(add_ts("Retrying UIDs in this set individually to find problematic UID(s)..."),
             class = "sticky", amount = 0)#.3 * prg_mult * -1)
-          evaluate_cells(unlist(uids), overwrite = overwrite, 
-                         retry_times = 2, retry_counter = retry_counter, 
+          evaluate_cells(unlist(uids), overwrite = overwrite,
+                         retry_times = min(retry_times, 2), retry_counter = retry_counter,
                          p = p, global_prog_mult = 0)
         # If repeating a second time, set overwrite to TRUE
-        } else if (retry_times >= 1 & retry_counter == 1) {
+        } else if (retry_times > 1 & retry_counter == 1) {
           p(add_ts("Retrying problematic UID with overwrite == TRUE..."), class = "sticky", amount = 0)#.3 * prg_mult * -1)
-          evaluate_cells(unlist(uids), overwrite = TRUE, 
-                         retry_times = 2, retry_counter = retry_counter, 
+          evaluate_cells(unlist(uids), overwrite = TRUE,
+                         retry_times = min(retry_times, 2), retry_counter = retry_counter,
                          p = p, global_prog_mult = 0)
         # If failed on last attempt (including an attempt that is first & only), remove progress for it
         } else {
           p(amount = -1 * prg_mult)
         }
-        
+
       }
     )
     
-    if (show_msg_prg) p(add_ts(lbl, " Processing complete."), class = "sticky", amount = 0)
-    p(amount = 0.8 * prg_mult * global_prog_mult)
+    if (show_msg_prg) p(add_ts(lbl, "Processing complete."), class = "sticky", amount = 0)
     
   }
     
@@ -218,14 +230,14 @@ evaluate_cells <- function(uid_list, overwrite = FALSE, retry_times = 0, retry_c
 
 # Run sequentially (testing)
 plan(sequential)
-evaluation <- evaluate_cells(uids_split[1], verbose_level = 1, retry_times = 1)
+evaluation <- evaluate_cells(uids_subset[1:2], verbose_level = 2, retry_times = 1)
 
 
 
 
 # Run multisession
 plan(multisession, workers = n_sessions)
-evaluation <- evaluate_cells(uids_split, verbose_level = 1, retry_times = 2)
+evaluation <- evaluate_cells(uids_split, verbose_level = 1, retry_times = 1, overwrite = FALSE)
 
 
 
