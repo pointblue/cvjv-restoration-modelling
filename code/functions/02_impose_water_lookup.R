@@ -35,8 +35,8 @@ impose_water_lookup <- function(uid_files, lookup_file,
   if (!(match_col %in% names(lookup_df))) stop(add_ts("Argument 'match_col' must be a column in 'lookup_file'"))
   if (!(class_col %in% names(lookup_df))) stop(add_ts("Argument 'class_col' must be a column in 'lookup_file'"))
   if (!(value_col %in% names(lookup_df))) stop(add_ts("Argument 'value_col' must be a column in 'lookup_file'"))
-  if (!(class_name) %in% as.character(unique(lookup_df[[class_col]]))) {
-    stop(add_ts("Argument 'class_name' must be a value in the 'class_col' column of 'lookup_df'"))
+  if (!(class_name %in% as.character(unique(lookup_df[[class_col]])))) { 
+    stop(add_ts("Argument 'class_name' must be a value in the 'class_col' column of 'lookup_df'")) 
   }
   if (!is.na(loop_col)) {
     if (!(loop_col %in% names(lookup_df))) stop(add_ts("Argument 'loop_col' must be a column in 'lookup_file' or NA"))
@@ -173,3 +173,20 @@ impose_water_lookup <- function(uid_files, lookup_file,
   
 }
 
+
+# uid_files <- file.path(cell_dir, paste0("cell_", rep(uids_subset[1:2], each = 2), 
+#                                         "_buffered-", c("250m", "5000m"), "_filled-0.tif"))
+# impose_water_lookup(uid_files = uid_files, 
+#                     lookup_file = file.path(grid_dir, "uid_full_lookup.rds"), 
+#                     match_strings = as.character(rep(uids_subset[1:2], each = 2)), 
+#                     match_col = "UID",
+#                     class_col = "ClassName", 
+#                     class_name = "Semi-permanent Wetland", 
+#                     value_col = "AvgWater", 
+#                     loop_col = "Month", 
+#                     loop_classes = month.abb,
+#                     class_label = "semiperm", 
+#                     value_adjustment = "coverage", 
+#                     output_dir = imp_dir, 
+#                     overwrite = FALSE,
+#                     verbose = TRUE)
