@@ -160,20 +160,20 @@ overlay_imposed_on_neighborhood <- function(imposed_files, focal_files,
 # uids <- uids_split[[1]]
 # #uids_ptn <- paste0("cell_(", paste0(uids, collapse = "|"), ").*tif$")
 #cell_100366_buffered-250m_filled-semiperm_month-Apr
-imp_files <- file.path(imp_dir, paste0("cell_", rep(uids, each = 24), "_",
-                                       "buffered-", rep(c(250, 5000), each = 12, times = 2), "m_",
-                                       "filled-semiperm_",
-                                       "month-", rep(month.abb, times = 2),
-                                       ".tif"))
-imp_files <- imp_files[grepl("-Mar.tif", imp_files)]
-stopifnot(all(file.exists(imp_files)))
-
-imposed_files <- imp_files
-focal_files <- lt_fcl_files[grepl("Wetland_SemiSeas.*250m", lt_fcl_files)]
-output_dir <- fcl_dir
-focal_filter <- "valley_2013-2022"
-overwrite <- FALSE
-verbose <- TRUE
-fcl_imp_files <- overlay_imposed_on_neighborhood(imp_files, focal_files, output_dir,
-                                                 focal_filter = "valley_2013-2022",
-                                                 overwrite = overwrite, verbose = verbose)
+# imp_files <- file.path(imp_dir, paste0("cell_", rep(uids, each = 24), "_",
+#                                        "buffered-", rep(c(250, 5000), each = 12, times = 2), "m_",
+#                                        "filled-semiperm_",
+#                                        "month-", rep(month.abb, times = 2),
+#                                        ".tif"))
+# imp_files <- imp_files[grepl("-Mar.tif", imp_files)]
+# stopifnot(all(file.exists(imp_files)))
+# 
+# imposed_files <- imp_files
+# focal_files <- lt_fcl_files[grepl("Wetland_SemiSeas.*250m", lt_fcl_files)]
+# output_dir <- fcl_dir
+# focal_filter <- "valley_2013-2022"
+# overwrite <- FALSE
+# verbose <- TRUE
+# fcl_imp_files <- overlay_imposed_on_neighborhood(imp_files, focal_files, output_dir,
+#                                                  focal_filter = "valley_2013-2022",
+#                                                  overwrite = overwrite, verbose = verbose)

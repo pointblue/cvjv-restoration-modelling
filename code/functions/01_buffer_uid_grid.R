@@ -92,5 +92,13 @@ buffer_uid_grid <- function(uid_raster, uids = NULL,
   return(processed_files)
   
 }
-  
-  
+
+# uids <- uids_subset[1:2]
+# buffer_uid_grid(uid_raster = file.path(grid_dir, "unique_ids_masked.tif"), 
+#                 uids = uids, #[[n]], #uids_split[[1]][1:3]
+#                 buffer_distances = c(250, 5000), 
+#                 fill_values = c(0, 0), 
+#                 fill_labels = NA,
+#                 output_dir = cell_dir, 
+#                 overwrite = overwrite,
+#                 verbose = TRUE)
