@@ -2,7 +2,7 @@
 
 # Predict bird rasters using the longterm model
 # Returns character vector of processed files
-predict_birdss <- function(water_files_longterm, scenarios, water_months,
+predict_birds <- function(water_files_longterm, scenarios, water_months,
                                  model_files, model_names, 
                                  static_cov_files, static_cov_names, 
                                  monthly_cov_files, monthly_cov_months, monthly_cov_names,
@@ -60,8 +60,8 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   landcover_lt_df <- data.frame(NameModel = c("long_rXw_250m", "long_2wetlandXw250m", "long_treatXw_250m", 
                                               "long_cornXw_250m", "long_grainXw_250m", "long_otherXw_250m",
                                               "long_rXw_5km", "long_2wetlandXw5km", "long_treatXw_5km", "long_allcropXw_5km"), 
-                                NameLandcover = c("Rice", "WetlandNatural", "WetlandTreated", "Corn", "GrainPlus", "AlternatingCrop",
-                                                  "Rice", "WetlandNatural", "WetlandTreated", "NonRiceCrop"), 
+                                NameLandcover = c("Rice", "WetlandSemiSeas", "TreatedWetland", "Corn", "Grain", "AltCrop",
+                                                  "Rice", "WetlandSemiSeas", "TreatedWetland", "NonRiceCrops"), 
                                 Distance = c(rep("250m", 6), rep("5000m", 4)))
   landcover_lt_df$LandcoverDistance <- paste(landcover_lt_df$NameLandcover, landcover_lt_df$Distance, sep = "_")
   
@@ -74,9 +74,7 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   
   # Get unique flooding areas
   fns_split <- strsplit(basename(water_files_longterm), "_")
-  uid <- extract_subelement(fns_split, 2)
-  flood_areas <- unique(paste0(extract_subelement(fns_split, 1), "_",
-                               uid))
+  flood_areas <- unique(extract_subelement(fns_split, 1))
   
 	# Loop across flooding areas
 	for (fa in flood_areas) {
@@ -108,11 +106,12 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   		  }
   		  
   		  # Check if all models have been predicted
-  		  prd_files <- file.path(output_dir, paste0(fac, "_", mth, "_", scn, "_", model_names, ".tif"))
+  		  prd_files <- file.path(output_dir, paste0(fac, "_month-", mth, "_", scn, 
+  		                                            "_model-", gsub("_", "-", model_names), ".tif"))
   		  if (all(file.exists(prd_files))) {
   		    
-			  # Append to output
-  			processed_files <- c(processed_files, prd_files)
+  			  # Append to output
+    			processed_files <- c(processed_files, prd_files)
 			
   		    if (verbose) message_ts("All bird predictions have been created for this scenario. Moving to next...")
   		    next
@@ -123,30 +122,41 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   		  if (verbose) message_ts("Checking and loading long-term water x landcover moving window files...")
 
   		  # Check files
-  		  landcover_lt_df$File <- mapply(nm = landcover_lt_df$NameLandcover, dst = landcover_lt_df$Distance, 
-                          			       FUN = function(nm, dst) {
-                            			         y <- fa_files[grep(paste0(mth, ".*", nm, "_.*", dst), fa_files)]
-                            			         #print(y)
-                            			         if(length(y) > 1) {
-                            			           stop(add_ts("Multiple files found for ", fac, ", ", mth, ", ", nm, ", ", dst, 
-                            			                       ". Should only be one."))
-                            			         } else if (length(y) == 0) {
-                            			           y <- 0
-                            			         }
-                            			         y
-                            			       })
+        # landcover_lt_df$File <- mapply(nm = landcover_lt_df$NameLandcover, dst = landcover_lt_df$Distance,
+        #                  			       FUN = function(nm, dst) {
+        #                    			         y <- fa_files[grep(paste0(mth, ".*", nm, "_.*", dst), fa_files)]
+        #                    			         #print(y)
+        #                    			         if(length(y) > 1) {
+        #                    			           stop(add_ts("Multiple files found for ", fac, ", ", mth, ", ", nm, ", ", dst,
+        #                    			                       ". Should only be one."))
+        #                    			         } else if (length(y) == 0) {
+        #                    			           y <- 0
+        #                    			         }
+        #                    			         y
+        #                    			       })
   		  
-  		  if (any(is.na(landcover_lt_df$File))) {
+  		  landcover_lt_df$File <- file.path(dirname(water_files_longterm[1]), 
+  		                                    paste0(fa, "_", 
+  		                                           "buffered-", landcover_lt_df$Distance, "_",
+  		                                           "filled-semiperm_",
+  		                                           "month-", mth, "_",
+  		                                           scn, "_",
+  		                                           "landcover-", landcover_lt_df$NameLandcover,
+  		                                           ".tif"))
+  		  
+  		  #if (any(is.na(landcover_lt_df$File))) {
+  		  landcover_lt_df$FileExists <- file.exists(landcover_lt_df$File)
+  		  if (!all(landcover_lt_df$FileExists)) {
   		    
   		    if(on_missing_landcover == "stop") {
   		      stop(add_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
   		                  ", scenario ", scn, ", and month ", mth, ":\n\t",
-  		                  paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
+  		                  paste0(landcover_lt_df$LandcoverDistance[!landcover_lt_df$FileExists], collapse = "\n\t"),
   		                  "\n\nHalting execultion."))
   		    } else {
   		      if (verbose) message_ts("The following longterm water x landcover moving window combinations are missing from water_files_longterm for flood area ", fa, 
   		                 ", scenario ", scn, ", and month ", mth, ":\n\t",
-  		                 paste0(landcover_lt_df$LandcoverDistance[is.na(landcover_lt_df$File)], collapse = "\n\t"),
+  		                 paste0(landcover_lt_df$LandcoverDistance[!landcover_lt_df$FileExists], collapse = "\n\t"),
   		                 "\n\nMoving to next...")
   		      next
   		    }
@@ -205,7 +215,7 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   				
   				if (verbose) message_ts("Working on bird model ", mdl_name)
   				
-  				prd_file <- file.path(output_dir, paste0(fac, "_", mth, "_", scn, "_", mdl_name, ".tif"))
+  				prd_file <- prd_files[mn]
   				
   				# Check if predicted
   				if (file.exists(prd_file) & overwrite != TRUE) {
@@ -227,7 +237,7 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
     				prd_rst <- terra::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
     				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
     				                   filename = prd_file, overwrite = TRUE)
-    				print(summary(prd_rst))
+    				#print(summary(prd_rst)) #catches predictions that are empty
     				if (verbose) message_ts("Complete.")
   				
     				# Append to output
@@ -317,3 +327,27 @@ predict_birdss <- function(water_files_longterm, scenarios, water_months,
   return(processed_files)
   
 }
+
+#cell-597751_buffered-250m_filled-semiperm_month-Feb_year-2013-2022_landcover-TreatedWetland
+#cell-100366_buffered-250m_filled-semiperm_month-Apr_year-2013-2022_landcover-AltCrop
+# uids <- uids_split[[1]]
+# fcl_imp_files <- file.path(fcl_dir, paste0("cell-", rep(uids, each = 12 * 2 * 7), "_",
+#                                            "buffered-", rep(c(250, 5000), each = 1, times = 12 * 7 * length(uids)), "m_", 
+#                                            "filled-semiperm_",
+#                                            "month-", rep(month.abb, each = 7 * 2, times = length(uids)),"_",
+#                                            "year-2013-2022_",
+#                                            "landcover-", rep(gsub("_", "", landcovers), each = 2, times = 12 * length(uids)),
+#                                            ".tif"))
+# stopifnot(all(file.exists(fcl_imp_files)))
+# predict_birds(water_files_longterm = fcl_imp_files,                  
+#               scenarios = "year-2013-2022",
+#               water_months = month.abb[1:2], #c("Apr"),
+#               model_files = shorebird_model_files_long, 
+#               model_names = shorebird_model_names_long, 
+#               static_cov_files = bird_model_cov_files, 
+#               static_cov_names = bird_model_cov_names,
+#               monthly_cov_files = tmax_files,
+#               monthly_cov_months = tmax_months,
+#               monthly_cov_names = tmax_names,
+#               output_dir = prd_dir,
+#               verbose = TRUE)
