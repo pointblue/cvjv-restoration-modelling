@@ -83,8 +83,8 @@ bird_model_cov_names <- c("COUNT_TYPE2", "roads5km")
 
 # Monthly covariates (tmax)
 #mths <- month.abb[c(1:5, 7:12)] #no June
-mths <- month.abb[4]
-#tmax_files <- file.path(cov_dir, paste0("tmax_", mths, "_p44r33.tif"))
-tmax_files <- file.path(cov_dir, paste0("tmax_", mths, "_valley_snapped.tif"))
+mths <- month.abb[1:12]
+mth_yrs <- c(rep("1991-2020", 9), rep("1990-2019", 3)) #tmax layers are from Flint dataset, which is by water year, so only through 2019 for last three months
+tmax_files <- file.path(cov_dir, paste0("tmax_", mth_yrs, "_", mths, "_mean_snapped.tif"))
 tmax_months <- mths
 tmax_names <- rep("tmax250m", length(mths))
