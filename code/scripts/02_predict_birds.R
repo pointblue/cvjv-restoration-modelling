@@ -54,7 +54,7 @@ uids_split <- chunk(sample(uids_subset), n_splits)
 
 # Set number of processes
 # Caps at number of cores - 1
-cores_to_use <- 16
+cores_to_use <- 8
 n_sessions <- min(length(uids_subset), cores_to_use, availableCores() - 1)
 
 handlers(global = TRUE)

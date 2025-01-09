@@ -154,24 +154,71 @@ uid_lc_files <- file.path(grid_dir, paste0("unique_ids_", names(lc_defs), ".rds"
 uid_df <- do.call(rbind, lapply(uid_lc_files, function(x) readRDS(x)))
 
 # Calculate percentage and plurality
-uid_sum_df <- uid_df %>%
-  arrange(UID, Landcover) %>%
-  group_by(UID) %>%
-  mutate(Percentage = Count / 4, #400 30x30m cells in each block x 100 for percent
-         Plurality = ifelse(Count == max(Count), TRUE, FALSE))
-write.csv(uid_sum_df, file.path(grid_dir, "unique_ids_combined.csv"), row.names = FALSE)
+uid_sum_file <- file.path(grid_dir, "unique_ids_combined.csv")
+if (file.exists(uid_sum_file) & overwrite != TRUE) {
+  uid_sum_df <- read.csv(uid_sum_file)
+} else {
+  uid_sum_df <- uid_df %>%
+    arrange(UID, Landcover) %>%
+    group_by(UID) %>%
+    mutate(Percentage = Count / 4, #400 30x30m cells in each block x 100 for percent
+           Plurality = ifelse(Count == max(Count), TRUE, FALSE))
+  write.csv(uid_sum_df, uid_sum_file, row.names = FALSE)
+}
 
-uid_suit_df <- uid_sum_df %>%
-  filter(Landcover != "Unsuitable" & Plurality == TRUE)
-write.csv(uid_suit_df, file.path(grid_dir, "unique_ids_suitable.csv"), row.names = FALSE)
+uid_suit_file <- file.path(grid_dir, "unique_ids_suitable.csv")
+if (file.exists(uid_suit_file) & overwrite != TRUE) {
+  uid_suit_df <- read.csv(uid_suit_file)
+} else {
+  uid_suit_df <- uid_sum_df %>%
+    filter(Landcover != "Unsuitable" & Plurality == TRUE)
+  write.csv(uid_suit_df, uid_suit_file, row.names = FALSE)
+}
 
-uid_grass_df <- uid_suit_df %>%
-  filter(Landcover == "GrassPasture")
-write.csv(uid_grass_df, file.path(grid_dir, "unique_ids_grass.csv"), row.names = FALSE)
+uid_grass_file <- file.path(grid_dir, "unique_ids_grass.csv")
+if (file.exists(uid_grass_file) & overwrite != TRUE) {
+  uid_grass_df <- read.csv(uid_grass_file)
+} else {
+  uid_grass_df <- uid_suit_df %>%
+    filter(Landcover == "GrassPasture")
+  write.csv(uid_grass_df, uid_grass_file, row.names = FALSE)
+}
 
-uid_ag_df <- uid_suit_df %>%
-  filter(Landcover != "GrassPasture")
-write.csv(uid_ag_df, file.path(grid_dir, "unique_ids_ag.csv"), row.names = FALSE)
+uid_ag_file <- file.path(grid_dir, "unique_ids_ag.csv")
+if (file.exists(uid_ag_file) & overwrite != TRUE) {
+  uid_ag_df <- read.csv(uid_ag_file)
+} else {
+  uid_ag_df <- uid_suit_df %>%
+    filter(Landcover != "GrassPasture" & Landcover != "WetlandTreated" & Landcover != "WetlandNatural")
+  write.csv(uid_ag_df, uid_ag_file, row.names = FALSE)
+}
+
+# Create suitable ag raster
+ag_file <- file.path(grid_dir, "ag_footprint.tif")
+if (file.exists(ag_file) & overwrite != TRUE) {
+  
+  message_ts("Ag raster already created and overwrite != TRUE; loading.")
+  ag_rst <- rast(ag_file)
+  
+} else {
+  
+  message_ts("Creating ag raster")
+  uids_ag <- unique(uid_ag_df$UID)
+  
+  # very slow
+  #rcl_df <- data.frame("Is" = c(uids_ag), 
+  #                     "Becomes" = c(rep(1, length(uids_ag))))
+  #ag_rst <- classify(uid_rst, as.matrix(rcl_df), others = NA, filename = ag_file, overwrite = TRUE)
+  
+  # Much quicker
+  ag_rst <- uid_rst
+  ag_rst[values(ag_rst) %in% uids_ag] <- 1
+  ag_rst[values(ag_rst) > 1] <- NA
+  writeRaster(ag_rst, ag_file, overwrite = TRUE)
+  message_ts("Complete")
+  plot(ag_rst)
+  
+}
 
 # Get xy positions
 uid_cell_rst <- rast(file.path(grid_dir, "unique_ids_coarse.tif"))
@@ -230,4 +277,4 @@ uid_all_df <- uid_bsn_df %>%
   left_join(mth_df)
 saveRDS(uid_all_df, uid_all_file)
   
-  
+

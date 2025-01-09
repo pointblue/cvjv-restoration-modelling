@@ -6,4 +6,5 @@
 *.ovr
 data/example
 data/other_covariates/tmax*
-data/other_covariates/valley_roads*
+data/other_covariates/roads_valley*
+data/other_covariates/valley_roads_valley*

@@ -5,7 +5,7 @@
 # Shared Functions --------------------
 
 # Basic logging function to add a timestamp to strings
-add_ts <- function(...) paste0("{", Sys.getpid(), "} [", Sys.time(), "] - ", ...)
+add_ts <- function(...) paste0("{", Sys.getpid(), "} [", format(Sys.time(), format = "%Y-%m-%d %H:%M:%S"), "] - ", ...)
 
 # Add as wrapper for base 'message' function
 message_ts <- function(...) message(add_ts(...))

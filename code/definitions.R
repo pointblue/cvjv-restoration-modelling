@@ -3,7 +3,7 @@
 # Point Blue, California Rice Commission
 
 # Set directories ---------------------------------------------
-base_dir <- "V:/Project/wetland/FWSPartners" #getwd() #replace as necessary with "YOUR/BASE/DIR"
+base_dir <- "V:/project/wetland/FWSPartners" #getwd() #replace as necessary with "YOUR/BASE/DIR"
 
 log_dir <- file.path(base_dir, "logs")
 
@@ -33,7 +33,11 @@ wxl_dir <- file.path(anl_dir, "water_x_landcover")
 fcl_dir <- file.path(anl_dir, "water_focal")
 prd_dir <- file.path(anl_dir, "bird_predictions")
 stat_dir <- file.path(anl_dir, "stats")
-cell_stat_dir <- file.path(stat_dir, "by_cell")
+stat_cell_dir <- file.path(stat_dir, "by_cell")
+
+map_dir <- file.path(anl_dir, "maps")
+map_mth_dir <- file.path(map_dir, "by_month")
+map_ssn_dir <- file.path(map_dir, "by_season")
 
 plot_dir <- file.path(anl_dir, "plots")
 
@@ -51,7 +55,7 @@ lc_files <- file.path(lc_dir, paste0(landcovers, "_valley.tif"))
 #if (!all(file.exists(lc_files))) { stop(add_ts("Missing landcover files."))}
 
 # Longterm focal water x landcover files (create with create_focal_water_longterm)
-lt_fcl_dir <- "V:/Project/wetland/NASA_water/CVJV_misc_pred_layer/ForecastingTNC/code/water_tracker/data/longterm_averages/water_focal"
+lt_fcl_dir <- "V:/project/wetland/NASA_water/CVJV_misc_pred_layer/ForecastingTNC/code/water_tracker/data/longterm_averages/water_focal"
 lt_fcl_files <- list.files(lt_fcl_dir, pattern = ".tif$", full.names = TRUE)
 
 # Basins
@@ -63,7 +67,7 @@ bird_df <- data.frame("CommonName" = c("American Avocet", "Black-necked Stilt", 
                       "CommonCode" = c("AMAV", "BNST", "DOWI", "DUNL", "NOPI", "NSHO", "GWTE"),
                       "ScientificCode" =c("REAM", "HIME", "LISPP", "CALA", "ANAC", "ANCL", "ANCR"))
 
-# Bird models
+# Shorebird models
 shorebird_sci_base <- paste(rep(c("CALA", "HIME", "LISPP", "REAM"), each = 2), c("N", "S"), sep = "_")
 shorebird_com_base <- paste(rep(c("DUNL", "BNST", "DOWI", "AMAV"), each = 2), c("N", "S"), sep = "_")
 # Two models for each species and model type, one for the north valley one and for the south
@@ -75,6 +79,35 @@ shorebird_model_names_reallong <- paste0(shorebird_com_base, "_reallong")
 # Long models that just use the long-term average
 shorebird_model_files_long <- file.path(brd_mdl_dir, paste0(shorebird_sci_base, "_Long_lowN_subset.rds"))
 shorebird_model_names_long <-  paste0(shorebird_com_base, "_longterm")
+
+# Duck models
+duck_sci_base <- paste(rep(c("ANAC", "ANCL", "ANCR"), each = 2), c("N", "S"), sep = "_")
+#duck_com_base <- paste(rep(c(""), each = 2), c("N", "S"), sep = "_")
+duck_model_files_long <- file.path(brd_mdl_dir, paste0(duck_sci_base, "_Longterm_4.rds"))
+if (!all(file.exists(duck_model_files_long))) {
+  
+  for (f in duck_model_files_long) {
+    
+    if (!file.exists(f)) {
+      
+      message_ts("Missing mdl file ", f)
+      f2 <- gsub("\\.rds", "", f)
+      if (file.exists(f2)) {
+        message_ts("Getting model from file ", f2)
+        load(f2)
+        fn <- basename(f2)
+        mdl_nm <- paste0(substr(fn, 1, 4), "_model_", substr(fn, 6, 6))
+        mdl <- get(mdl_nm)
+        message_ts("Saving model as RDS")
+        saveRDS(mdl, f)
+      }
+      
+    }
+    
+  }
+  
+}
+duck_model_names_long <- paste0(duck_sci_base, "_longterm")
 
 # Static covariates
 #bird_model_cov_files <- file.path(cov_dir, c("data_type_constant_ebird_p44r33.tif", "valley_roads_p44r33.tif"))

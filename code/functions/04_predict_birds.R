@@ -235,8 +235,8 @@ predict_birds <- function(water_files_longterm, scenarios, water_months,
   				tryCatch({
     				# Must define factors when predicting
     				prd_rst <- terra::predict(cov_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
-    				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
-    				                   filename = prd_file, overwrite = TRUE)
+    				                   type = "response", factors = list("COUNT_TYPE2" = c(1, 2)))
+    				writeRaster(prd_rst, filename = prd_file, overwrite = TRUE)
     				#print(summary(prd_rst)) #catches predictions that are empty
     				if (verbose) message_ts("Complete.")
   				
@@ -283,17 +283,18 @@ predict_birds <- function(water_files_longterm, scenarios, water_months,
     				                                         overwrite = TRUE)
     				    
     				    # Re-predict
-    				    prd_files_temp <- predict_bird_rasters(fcl_files,                  
-    				                                      scenarios = "2011-2021",
-    				                                      water_months = c("Apr"),
-    				                                      model_files = shorebird_model_files_long, 
-    				                                      model_names = shorebird_model_names_long, 
-    				                                      static_cov_files = bird_model_cov_files, 
-    				                                      static_cov_names = bird_model_cov_names,
-    				                                      monthly_cov_files = tmax_files,
-    				                                      monthly_cov_months = tmax_months,
-    				                                      monthly_cov_names = tmax_names,
-    				                                      output_dir = prd_dir,
+    				    prd_files_temp <- predict_bird_rasters(water_files_longterm,                  
+    				                                      scenarios = scenarios,
+    				                                      water_months = water_months,
+    				                                      model_files = model_files, 
+    				                                      model_names = model_names, 
+    				                                      static_cov_files = static_cov_files, 
+    				                                      static_cov_names = static_cov_names,
+    				                                      monthly_cov_files = monthly_cov_files,
+    				                                      monthly_cov_months = monthly_cov_months,
+    				                                      monthly_cov_names = monthly_cov_names,
+    				                                      output_dir = output_dir,
+    				                                      verbose = TRUE,
     				                                      on_error_rerun = FALSE) #set to false to prevent endless recursion
     				    
     				    # Append
