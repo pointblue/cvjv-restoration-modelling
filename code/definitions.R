@@ -39,6 +39,10 @@ map_dir <- file.path(anl_dir, "maps")
 map_mth_dir <- file.path(map_dir, "by_month")
 map_ssn_dir <- file.path(map_dir, "by_season")
 
+map_um_dir <- file.path(map_dir, "unmasked")
+map_um_mth_dir <- file.path(map_um_dir, "by_month")
+map_um_ssn_dir <- file.path(map_um_dir, "by_season")
+
 plot_dir <- file.path(anl_dir, "plots")
 
 # Landcover files

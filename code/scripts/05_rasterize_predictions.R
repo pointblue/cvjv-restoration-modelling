@@ -23,9 +23,21 @@ overwrite <- FALSE
 verbose <- FALSE
 
 # Load reference raster and stats
-ag_rst <- rast(file.path(grid_dir, "ag_footprint.tif"))
 uid_rst <- rast(file.path(grid_dir, "unique_ids_coarse.tif"))
 #ens_vct <- vect(file.path(map_dir, "ensembled_summary.shp"))
+
+# Load / create ag footprint file
+ag_rsp_file <- file.path(grid_dir, "ag_footprint_resampled.tif")
+if (!file.exists(ag_rsp_file) | overwrite == TRUE) {
+  
+  message_ts("Resampling ag footprint raster")
+  ag_rst <- rast(file.path(grid_dir, "ag_footprint.tif"))
+  ag_rsp_rst <- resample(ag_rst, uid_rst, filename = ag_rsp_file)
+  ag_rst <- ag_rsp_rst
+  
+} else {
+  ag_rst <- rast(ag_rsp_file)
+}
 
 # Load suitable cells
 ag_df <- read.csv(file.path(grid_dir, "unique_ids_suitable_xy.csv"), stringsAsFactors = FALSE)
@@ -44,15 +56,11 @@ for (n in 1:nrow(unique_df)) {
   sr <- unique_df$SummaryRegion[n]
   message_ts("Working on ", yr, ", ", mth, ", ", sp, ", ", sr)
   
-  suit_file <- file.path(map_mth_dir, paste0("suitability_", yr, 
+  suit_file <- file.path(map_um_mth_dir, paste0("suitability_", yr, 
                                          "_", mth, "_", sp, "_",
                                          tolower(gsub(" ", "-", sr)), ".tif"))
-  if (file.exists(suit_file) & overwrite != TRUE) {
+  if (!file.exists(suit_file) | overwrite == TRUE) {
     
-    message_ts("Already created. Moving to next")
-    
-  } else {
-      
     # Subset
     message_ts("Subsetting")
     scn_df <- ens_df[ens_df$Month == mth & ens_df$Year == yr & ens_df$Species == sp & 
@@ -75,6 +83,25 @@ for (n in 1:nrow(unique_df)) {
     suit_rst <- rasterize(as.matrix(idw_prd[c("Easting", "Northing")]), 
                           uid_rst, values = idw_prd$SuitabilitySum, background = NA,
                           filename = suit_file, overwrite = TRUE)
+    
+  } else {
+    
+    message_ts("Raster already created. Loading...")
+    suit_rst <- rast(suit_file)
+  
+  }
+  
+  suit_msk_file <- file.path(map_mth_dir, paste0("suitability_", yr, 
+                                                "_", mth, "_", sp, "_",
+                                                tolower(gsub(" ", "-", sr)), ".tif"))
+  if (!file.exists(suit_msk_file) | overwrite == TRUE) {
+    
+    message_ts("Masking suitability raster...")
+    suit_msk_rst <- mask(suit_rst, ag_rst, filename = suit_msk_file, overwrite = TRUE)
+    
+  } else {
+    
+    message_ts("Suitability raster already masked. Moving to next...")
     
   }
   
