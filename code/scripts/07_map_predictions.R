@@ -7,24 +7,28 @@ library(tidyr)
 library(ggplot2)
 
 # Load definitions and code
-code_dir <- "E:/code/cvjv-restoration-modelling/code"
+code_dir <- "C:/code/cvjv-restoration-modelling/code"
 def_file <- file.path(code_dir, "definitions.R")
 code_files <- list.files(file.path(code_dir, "functions"), pattern = ".*R$", full.names = TRUE)
-sapply(c(def_file, code_files), FUN = function(x) source(x))
+sapply(c(code_files, def_file), FUN = function(x) source(x))
 
 # Local dirs
-base_dir <- file.path("E:/code/cvjv-restoration-modelling")
+base_dir <- file.path("C:/code/cvjv-restoration-modelling")
 sum_dir <- file.path(base_dir, "analysis/bird_summaries")
 sum_ssn_dir <- file.path(sum_dir, "by_season")
 
 zon_dir <- file.path(base_dir, "zonation")
 zon_tu_dir <- file.path(zon_dir, "by_season")
 
+lc_rst <- rast(file.path(base_dir, "data/landcover", "cropscape_combined_2014-2021.tif"))
+fp_rst <- (lc_rst + 1) / (lc_rst + 1)
+
 overwrite <- FALSE
 
 for (sp in bird_df$FilenameCode) {
   
-  message_ts("Working on species ", sp)
+  sp_lbl <- bird_df$CommonName[bird_df$FilenameCode == sp]
+  message_ts("Working on species ", sp_lbl, ": ", sp)
   
   sp_files <- list.files(sum_ssn_dir, pattern = paste0("^suitability.*", sp, ".*tif$"), full.names = TRUE)
   sp_files
@@ -38,14 +42,30 @@ for (sp in bird_df$FilenameCode) {
                  names_to = c("Layer", "Years", "Season", "Species", "SpatialScale"),
                  names_sep = "_",
                  values_to = "SuitabilitySum") |>
-    mutate(SuitabilityMean = case_when(SpatialScale == "inside", SuitabilitySum / 360000, 
-                                       SpatialScale == "landscape-250m", SuitabilitySum / 1102500, 
-                                       SpatialScale == "landscape-5km", SuitabilitySum / 112148100))
+    mutate(SuitabilityMean = case_when(SpatialScale == "inside" ~ SuitabilitySum / 360000, 
+                                       SpatialScale == "landscape-250m" ~ SuitabilitySum / 1102500, 
+                                       SpatialScale == "landscape-5km" ~ SuitabilitySum / 112148100),
+           RestorationScore = (SuitabilityMean / max(SuitabilityMean)) * 100) #rescale 0 - 1
   
-  ggplot(sp_df, aes(x = x, y = y, fill = MeanSuitability)) + geom_tile() +
-    facet_grid(Season ~ SpatialScale)
-  stop()
+  sp_map <- ggplot(sp_df, aes(x = x, y = y, fill = RestorationScore)) + geom_tile() +
+    facet_grid(Season ~ SpatialScale) +
+    theme_bw() +
+    #theme(panel.background = element_rect(fill = "#EEEEEE")) +
+    ggtitle(paste0("Estimated Restoration Score of ", sp_lbl, 
+                   " for Potential Wetland Restorations in California's Central Valley")) +
+    labs(subtitle = "Relative mean estimated suitability at three scales based on a simulated restoration simulation") +
+    xlab("") +
+    ylab("") +
+    scale_fill_viridis_c(name = "Relative\nRestoration\nScore", 
+                         option = "D") +
+    scale_x_continuous(breaks = NULL) +
+    scale_y_continuous(breaks = NULL)
+      
+  sp_map
   
+  ggsave(sp_map)
+  
+  #stop()
     
 }
 
