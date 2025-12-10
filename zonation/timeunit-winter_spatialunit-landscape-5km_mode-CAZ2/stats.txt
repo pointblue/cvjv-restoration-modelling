@@ -1,0 +1,23 @@
+Arguments given: -w --mode=CAZ2 E:/code/cvjv-restoration-modelling/zonation/timeunit-winter_spatialunit-landscape-5km_mode-CAZ2/timeunit-winter_spatialunit-landscape-5km_mode-CAZ2_settings.z5 E:/code/cvjv-restoration-modelling/zonation/timeunit-winter_spatialunit-landscape-5km_mode-CAZ2
+Settings filename: E:/code/cvjv-restoration-modelling/zonation/timeunit-winter_spatialunit-landscape-5km_mode-CAZ2/timeunit-winter_spatialunit-landscape-5km_mode-CAZ2_settings.z5
+Feature list filename: E:\code\cvjv-restoration-modelling\zonation\timeunit-winter_spatialunit-landscape-5km_mode-CAZ2\timeunit-winter_spatialunit-landscape-5km_mode-CAZ2_featurelist.txt
+Map dimensions (width * height): 696*867
+Number of grid cells in map (width * height): 603432
+Number of grid cells in map with data: 40246
+Input feature layer count: 7
+Feature layer count: 7
+Positive weight feature count: 7
+Negative weight feature count: 0
+Zero weight feature count: 0
+Total number of pixels with data across features: 281722
+Mean feature extent across study area: 100.00%
+Memory usage of feature data: 863.67KB
+Mean quantization error: 0.000937261%
+Time used to read and preprocess layer data: 0s
+Time used in prioritization: 0s
+Number of iterations: 38
+Final convergence level: 0.00892015%
+Area under curve: 0.526438
+Total time used: 1s
+Number of errors: 0
+Number of warnings: 0

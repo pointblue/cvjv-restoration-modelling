@@ -66,10 +66,12 @@ lt_fcl_files <- list.files(lt_fcl_dir, pattern = ".tif$", full.names = TRUE)
 basins <- c("American", "Butte", "Colusa", "Delta", "San Joaquin", "Suisun", "Sutter", "Tulare", "Yolo")
 
 # Bird definitions
-bird_df <- data.frame("CommonName" = c("American Avocet", "Black-necked Stilt", "Dowitcher", "Dunlin", 
+bird_df <- data.frame(CommonName = c("American Avocet", "Black-necked Stilt", "Dowitcher", "Dunlin", 
                                        "Northern Pintail", "Northern Shoveler", "Green-winged Teal"),
-                      "CommonCode" = c("AMAV", "BNST", "DOWI", "DUNL", "NOPI", "NSHO", "GWTE"),
-                      "ScientificCode" =c("REAM", "HIME", "LISPP", "CALA", "ANAC", "ANCL", "ANCR"))
+                      CommonCode = c("AMAV", "BNST", "DOWI", "DUNL", "NOPI", "NSHO", "GWTE"),
+                      ScientificCode =c("REAM", "HIME", "LISPP", "CALA", "ANAC", "ANCL", "ANCR"),
+                      FilenameCode = c("AMAV", "BNST", "DOWI", "DUNL", 
+                                       "ANAC", "ANCL", "ANCR"))
 
 # Shorebird models
 shorebird_sci_base <- paste(rep(c("CALA", "HIME", "LISPP", "REAM"), each = 2), c("N", "S"), sep = "_")
