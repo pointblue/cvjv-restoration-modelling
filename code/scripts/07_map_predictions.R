@@ -35,9 +35,15 @@ for (sp in bird_df$FilenameCode) {
   
   sp_df <- as.data.frame(sp_stk, xy = TRUE) |>
     pivot_longer(names(sp_stk),
-                 names_to = c("Layer", "Years", "Season", "Species", "Distance")
+                 names_to = c("Layer", "Years", "Season", "Species", "SpatialScale"),
                  names_sep = "_",
-                 )
+                 values_to = "SuitabilitySum") |>
+    mutate(SuitabilityMean = case_when(SpatialScale == "inside", SuitabilitySum / 360000, 
+                                       SpatialScale == "landscape-250m", SuitabilitySum / 1102500, 
+                                       SpatialScale == "landscape-5km", SuitabilitySum / 112148100))
+  
+  ggplot(sp_df, aes(x = x, y = y, fill = MeanSuitability)) + geom_tile() +
+    facet_grid(Season ~ SpatialScale)
   stop()
   
     
