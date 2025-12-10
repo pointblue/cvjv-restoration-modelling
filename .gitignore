@@ -8,3 +8,4 @@ data/example
 data/other_covariates/tmax*
 data/other_covariates/roads_valley*
 data/other_covariates/valley_roads_valley*
+analysis/bird_summaries/unmasked/ensembled_summary*
