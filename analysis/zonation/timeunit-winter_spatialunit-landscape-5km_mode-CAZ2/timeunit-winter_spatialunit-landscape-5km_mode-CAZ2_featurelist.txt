@@ -1,8 +1,0 @@
-"weight" "filename"
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_AMAV_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_BNST_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_DOWI_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_DUNL_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_ANAC_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_ANCL_landscape-5km.tif
-1.00 E:/code/cvjv-restoration-modelling/analysis/bird_summaries/by_season/suitability_2013-2022_winter_ANCR_landscape-5km.tif
