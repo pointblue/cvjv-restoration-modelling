@@ -95,12 +95,12 @@ for (sp in bird_df$FilenameCode) {
     geom_tile(data = sa_df, aes(x = x, y = y), fill = "gray") +
     geom_tile(data = sp_df, aes(x = x, y = y, fill = SuitabilityMean)) +
     facet_grid(Season ~ SpatialScale) +
-    theme_bw(base_size = 16) +
+    theme_bw(base_size = 14) +
     #theme(panel.background = element_rect(fill = "#EEEEEE")) +
     #theme(strip.text = element_text(size = 12)) + 
-    ggtitle(paste0("Estimated Suitability for ", sp_lbl, 
-                   " at Potential Wetland Restoration Sites in California's Central Valley")) +
-    labs(subtitle = "Relative mean estimated suitability per hectare at three scales based on simulated wetland restorations") +
+    #ggtitle(paste0("Estimated Suitability for ", sp_lbl, 
+    #               " at Potential Wetland Restoration Sites in California's Central Valley")) +
+    #labs(subtitle = "Relative mean estimated suitability per hectare at three scales based on simulated wetland restorations") +
     xlab("") +
     ylab("") +
     scale_fill_viridis_c(name = "Mean\nSuitability\nScore", 
@@ -117,7 +117,7 @@ for (sp in bird_df$FilenameCode) {
          filename = file.path(map_dir,
                               paste0("restoration_suitability_", sp, ".png")),
          #width = 4000, height = 5000, units = "px")
-         width = 7, height = 9, units = "in")
+         width = 8, height = 10, units = "in", dpi = 400)
     
 }
 
