@@ -68,6 +68,8 @@ basins <- c("American", "Butte", "Colusa", "Delta", "San Joaquin", "Suisun", "Su
 # Bird definitions
 bird_df <- data.frame(CommonName = c("American Avocet", "Black-necked Stilt", "Dowitcher", "Dunlin", 
                                        "Northern Pintail", "Northern Shoveler", "Green-winged Teal"),
+                      SpeciesGroup = c(rep("shorebirds", 4),
+                                       rep("ducks", 3)),
                       CommonCode = c("AMAV", "BNST", "DOWI", "DUNL", "NOPI", "NSHO", "GWTE"),
                       ScientificCode =c("REAM", "HIME", "LISPP", "CALA", "ANAC", "ANCL", "ANCR"),
                       FilenameCode = c("AMAV", "BNST", "DOWI", "DUNL", 

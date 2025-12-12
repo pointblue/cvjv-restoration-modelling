@@ -95,9 +95,9 @@ for (sp in bird_df$FilenameCode) {
     geom_tile(data = sa_df, aes(x = x, y = y), fill = "gray") +
     geom_tile(data = sp_df, aes(x = x, y = y, fill = SuitabilityMean)) +
     facet_grid(Season ~ SpatialScale) +
-    theme_bw(base_size = 14) +
+    theme_bw(base_size = 16) +
     #theme(panel.background = element_rect(fill = "#EEEEEE")) +
-    theme(strip.text = element_text(size = 12)) + 
+    #theme(strip.text = element_text(size = 12)) + 
     ggtitle(paste0("Estimated Suitability for ", sp_lbl, 
                    " at Potential Wetland Restoration Sites in California's Central Valley")) +
     labs(subtitle = "Relative mean estimated suitability per hectare at three scales based on simulated wetland restorations") +
@@ -105,6 +105,7 @@ for (sp in bird_df$FilenameCode) {
     ylab("") +
     scale_fill_viridis_c(name = "Mean\nSuitability\nScore", 
                          option = "D") +
+    #scale_fill_gradient2(low = "#a50026", mid = "#ffffbf", high = "#313695") + #lighter red: #d73027, ligher blue: #4575b4; #Br/bl #8c510a, #f5f5f5, #01665e
     scale_x_continuous(breaks = NULL) +
     scale_y_continuous(breaks = NULL)
       
@@ -115,7 +116,8 @@ for (sp in bird_df$FilenameCode) {
   ggsave(plot = sp_map, 
          filename = file.path(map_dir,
                               paste0("restoration_suitability_", sp, ".png")),
-         width = 4000, height = 5000, units = "px")
+         #width = 4000, height = 5000, units = "px")
+         width = 7, height = 9, units = "in")
     
 }
 
@@ -126,35 +128,3 @@ message_ts("Mean correlation between inside and 250m: ", cor_inside_250m)
 
 cor_inside_5k <- mean(cor_df$inside[seq(from = 3, by = 3, length.out = 7)])
 message_ts("Mean correlation between inside and 5k: ", cor_inside_5k)
-
-# Plot
-diff_files <- list.files(prd_dir, pattern = "ALL.*ShastaDiff_real.tif", full.names = TRUE)
-diff_stk <- rast(diff_files)
-names(diff_stk) <- substr(basename(diff_files), 12, 14)
-
-
-#plot(diff_stk)
-diff_df <- as.data.frame(diff_stk, xy = TRUE) |>
-  pivot_longer(names(diff_stk),
-               names_to = "Month",
-               values_to = "DroughtEffect") |>
-  mutate(Month = factor(Month, levels = month.abb))
-diff_map <- ggplot(diff_df, aes(x = x, y = y, fill = DroughtEffect)) + geom_tile() +
-  facet_wrap(~ Month, ncol = 3) +
-  scale_fill_gradient2(low = "#a50026", mid = "#ffffbf", high = "#313695") + #lighter red: #d73027, ligher blue: #4575b4; #Br/bl #8c510a, #f5f5f5, #01665e
-  #scale_fill_viridis_c(name = "Drought\nEffect", option = "H", direction = -1) +
-  scale_x_continuous(breaks = NULL) +
-  scale_y_continuous(breaks = NULL) + 
-  theme_bw() +
-  theme(strip.text = element_text(size = 12)) + 
-  labs(title = paste0("Effects of Drought on Bird Suitability in the Grasslands Area of California's Central Valley"),
-       subtitle = paste0("Ensembled Monthly Average, Shasta Critical vs Normal, 2013 - 2025")) +
-  xlab("") +
-  ylab("")
-
-diff_map
-
-ggsave(plot = diff_map, 
-       filename = file.path(map_dir,
-                            paste0("ensembled_suitability_drought_effect.png")),
-       width = 4000, height = 5000, units = "px")
